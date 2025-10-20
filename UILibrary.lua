@@ -189,7 +189,7 @@ function Flint:CreateWindow(options)
     local position = options.Position or UDim2.new(0.5, -250, 0.5, -175)
 
     local ScreenGui = Instance.new("ScreenGui")
-    ScreenGui.Name = "FlintUILibrary"
+    ScreenGui.Name = "FlintUI"
     ScreenGui.ResetOnSpawn = false
     ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     
@@ -200,6 +200,12 @@ function Flint:CreateWindow(options)
         ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
     end
     
+    local LibraryData = {
+        ThemeElements = {},
+        ScreenGui = ScreenGui,
+        Notifications = {}
+    }
+    
     local DropdownContainer = Instance.new("Frame")
     DropdownContainer.Name = "DropdownContainer"
     DropdownContainer.Size = UDim2.new(1, 0, 1, 0)
@@ -207,6 +213,19 @@ function Flint:CreateWindow(options)
     DropdownContainer.BackgroundTransparency = 1
     DropdownContainer.ZIndex = 100
     DropdownContainer.Parent = ScreenGui
+    
+    local NotificationContainer = Instance.new("Frame")
+    NotificationContainer.Name = "NotificationContainer"
+    NotificationContainer.Size = UDim2.new(0, 200, 1, 0)
+    NotificationContainer.Position = UDim2.new(1, -210, 0, 0)
+    NotificationContainer.BackgroundTransparency = 1
+    NotificationContainer.Parent = ScreenGui
+    
+    local NotificationLayout = Instance.new("UIListLayout")
+    NotificationLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    NotificationLayout.Padding = UDim.new(0, 10)
+    NotificationLayout.VerticalAlignment = Enum.VerticalAlignment.Bottom
+    NotificationLayout.Parent = NotificationContainer
     
     local MinimizedIcon = Instance.new("Frame")
     MinimizedIcon.Name = "MinimizedIcon"
@@ -321,17 +340,13 @@ function Flint:CreateWindow(options)
     ContentFrame.BackgroundTransparency = 1
     ContentFrame.Parent = MainFrame
     
-    local LibraryData = {
-        ScreenGui = ScreenGui,
-        MainFrame = MainFrame,
-        Sidebar = Sidebar,
-        ContentFrame = ContentFrame,
-        DropdownContainer = DropdownContainer,
-        MinimizedIcon = MinimizedIcon,
-        Tabs = {},
-        CurrentTab = nil,
-        ThemeElements = {}
-    }
+    LibraryData.MainFrame = MainFrame
+    LibraryData.Sidebar = Sidebar
+    LibraryData.ContentFrame = ContentFrame
+    LibraryData.DropdownContainer = DropdownContainer
+    LibraryData.MinimizedIcon = MinimizedIcon
+    LibraryData.Tabs = {}
+    LibraryData.CurrentTab = nil
     
     LibraryData.ThemeElements[MainFrame] = "Background"
     LibraryData.ThemeElements[TopBar] = "SecondaryBackground"
@@ -443,6 +458,49 @@ end
 
 function Flint:Init()
     return Flint:CreateWindow()
+end
+
+function Flint:Notify(message)
+    local NotificationContainer = self.ScreenGui:FindFirstChild("NotificationContainer")
+    if not NotificationContainer then return end
+    
+    local notification = Instance.new("Frame")
+    notification.Size = UDim2.new(0, 190, 0, 50)
+    notification.BackgroundColor3 = GetTheme().ElementBackground
+    notification.BorderSizePixel = 0
+    notification.Parent = NotificationContainer
+    
+    local notificationCorner = Instance.new("UICorner")
+    notificationCorner.CornerRadius = UDim.new(0, 8)
+    notificationCorner.Parent = notification
+    
+    local notificationLabel = Instance.new("TextLabel")
+    notificationLabel.Size = UDim2.new(1, -10, 1, -10)
+    notificationLabel.Position = UDim2.new(0, 5, 0, 5)
+    notificationLabel.BackgroundTransparency = 1
+    notificationLabel.Text = message
+    notificationLabel.TextColor3 = GetTheme().TextPrimary
+    notificationLabel.TextSize = 10
+    notificationLabel.Font = Enum.Font.Gotham
+    notificationLabel.TextWrapped = true
+    notificationLabel.TextXAlignment = Enum.TextXAlignment.Left
+    notificationLabel.TextYAlignment = Enum.TextYAlignment.Top
+    notificationLabel.Parent = notification
+    
+    self.ThemeElements[notification] = "ElementBackground"
+    self.ThemeElements[notificationLabel] = "TextPrimary"
+    
+    local tweenIn = TweenService:Create(notification, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Position = UDim2.new(0, 0, 0, 0)})
+    tweenIn:Play()
+    
+    task.spawn(function()
+        task.wait(3)
+        local tweenOut = TweenService:Create(notification, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Position = UDim2.new(0, 200, 0, 0)})
+        tweenOut:Play()
+        tweenOut.Completed:Connect(function()
+            notification:Destroy()
+        end)
+    end)
 end
 
 function Flint:CreateTab(libData, name, icon, autoSelect)
@@ -606,7 +664,8 @@ function Flint:CreateSection(parent, text)
     sectionLabel.TextXAlignment = Enum.TextXAlignment.Left
     sectionLabel.Parent = section
     
-    parent:FindFirstAncestorOfClass("ScreenGui").FlintUILibrary.ThemeElements[sectionLabel] = "TextPrimary"
+    local screenGui = parent:FindFirstAncestorOfClass("ScreenGui")
+    screenGui.FlintUI.LibraryData.ThemeElements[sectionLabel] = "TextPrimary"
     
     return section
 end
@@ -670,10 +729,10 @@ function Flint:CreateToggle(parent, text, defaultValue, callback)
     end)
     
     local screenGui = parent:FindFirstAncestorOfClass("ScreenGui")
-    screenGui.FlintUILibrary.ThemeElements[toggleFrame] = "ElementBackground"
-    screenGui.FlintUILibrary.ThemeElements[label] = "TextPrimary"
-    screenGui.FlintUILibrary.ThemeElements[toggleButton] = toggled and "Primary" or "DarkElement"
-    screenGui.FlintUILibrary.ThemeElements[toggleCircle] = "Background"
+    screenGui.FlintUI.LibraryData.ThemeElements[toggleFrame] = "ElementBackground"
+    screenGui.FlintUI.LibraryData.ThemeElements[label] = "TextPrimary"
+    screenGui.FlintUI.LibraryData.ThemeElements[toggleButton] = toggled and "Primary" or "DarkElement"
+    screenGui.FlintUI.LibraryData.ThemeElements[toggleCircle] = "Background"
     
     return toggleFrame
 end
@@ -775,11 +834,11 @@ function Flint:CreateSlider(parent, text, min, max, defaultValue, callback)
     end)
     
     local screenGui = parent:FindFirstAncestorOfClass("ScreenGui")
-    screenGui.FlintUILibrary.ThemeElements[sliderFrame] = "ElementBackground"
-    screenGui.FlintUILibrary.ThemeElements[label] = "TextPrimary"
-    screenGui.FlintUILibrary.ThemeElements[valueLabel] = "TextSecondary"
-    screenGui.FlintUILibrary.ThemeElements[sliderBar] = "DarkElement"
-    screenGui.FlintUILibrary.ThemeElements[sliderFill] = "Primary"
+    screenGui.FlintUI.LibraryData.ThemeElements[sliderFrame] = "ElementBackground"
+    screenGui.FlintUI.LibraryData.ThemeElements[label] = "TextPrimary"
+    screenGui.FlintUI.LibraryData.ThemeElements[valueLabel] = "TextSecondary"
+    screenGui.FlintUI.LibraryData.ThemeElements[sliderBar] = "DarkElement"
+    screenGui.FlintUI.LibraryData.ThemeElements[sliderFill] = "Primary"
     
     return sliderFrame
 end
@@ -848,10 +907,10 @@ function Flint:CreateKeybind(parent, text, defaultKey, callback)
     end)
     
     local screenGui = parent:FindFirstAncestorOfClass("ScreenGui")
-    screenGui.FlintUILibrary.ThemeElements[keybindFrame] = "ElementBackground"
-    screenGui.FlintUILibrary.ThemeElements[label] = "TextPrimary"
-    screenGui.FlintUILibrary.ThemeElements[keybindButton] = "DarkElement"
-    screenGui.FlintUILibrary.ThemeElements[keybindButton] = "TextPrimary"
+    screenGui.FlintUI.LibraryData.ThemeElements[keybindFrame] = "ElementBackground"
+    screenGui.FlintUI.LibraryData.ThemeElements[label] = "TextPrimary"
+    screenGui.FlintUI.LibraryData.ThemeElements[keybindButton] = "DarkElement"
+    screenGui.FlintUI.LibraryData.ThemeElements[keybindButton] = "TextPrimary"
     
     return keybindFrame
 end
@@ -969,7 +1028,7 @@ function Flint:CreateDropdown(parent, text, options, defaultValue, callback)
             end)
             
             local screenGui = parent:FindFirstAncestorOfClass("ScreenGui")
-            screenGui.FlintUILibrary.ThemeElements[optionButton] = "DarkElement"
+            screenGui.FlintUI.LibraryData.ThemeElements[optionButton] = "DarkElement"
         end
     end
     
@@ -991,11 +1050,11 @@ function Flint:CreateDropdown(parent, text, options, defaultValue, callback)
     end)
     
     local screenGui = parent:FindFirstAncestorOfClass("ScreenGui")
-    screenGui.FlintUILibrary.ThemeElements[dropdownFrame] = "ElementBackground"
-    screenGui.FlintUILibrary.ThemeElements[label] = "TextPrimary"
-    screenGui.FlintUILibrary.ThemeElements[dropdownButton] = "DarkElement"
-    screenGui.FlintUILibrary.ThemeElements[dropdownButton] = "TextPrimary"
-    screenGui.FlintUILibrary.ThemeElements[dropdownList] = "ElementBackground"
+    screenGui.FlintUI.LibraryData.ThemeElements[dropdownFrame] = "ElementBackground"
+    screenGui.FlintUI.LibraryData.ThemeElements[label] = "TextPrimary"
+    screenGui.FlintUI.LibraryData.ThemeElements[dropdownButton] = "DarkElement"
+    screenGui.FlintUI.LibraryData.ThemeElements[dropdownButton] = "TextPrimary"
+    screenGui.FlintUI.LibraryData.ThemeElements[dropdownList] = "ElementBackground"
     
     return dropdownFrame
 end
@@ -1048,10 +1107,10 @@ function Flint:CreateTextBox(parent, text, defaultValue, callback)
     end)
     
     local screenGui = parent:FindFirstAncestorOfClass("ScreenGui")
-    screenGui.FlintUILibrary.ThemeElements[textboxFrame] = "ElementBackground"
-    screenGui.FlintUILibrary.ThemeElements[label] = "TextPrimary"
-    screenGui.FlintUILibrary.ThemeElements[textBox] = "DarkElement"
-    screenGui.FlintUILibrary.ThemeElements[textBox] = "TextPrimary"
+    screenGui.FlintUI.LibraryData.ThemeElements[textboxFrame] = "ElementBackground"
+    screenGui.FlintUI.LibraryData.ThemeElements[label] = "TextPrimary"
+    screenGui.FlintUI.LibraryData.ThemeElements[textBox] = "DarkElement"
+    screenGui.FlintUI.LibraryData.ThemeElements[textBox] = "TextPrimary"
     
     return textboxFrame
 end
@@ -1100,9 +1159,9 @@ function Flint:CreateButton(parent, text, callback)
     end)
     
     local screenGui = parent:FindFirstAncestorOfClass("ScreenGui")
-    screenGui.FlintUILibrary.ThemeElements[buttonFrame] = "ElementBackground"
-    screenGui.FlintUILibrary.ThemeElements[button] = "Primary"
-    screenGui.FlintUILibrary.ThemeElements[button] = "TextPrimary"
+    screenGui.FlintUI.LibraryData.ThemeElements[buttonFrame] = "ElementBackground"
+    screenGui.FlintUI.LibraryData.ThemeElements[button] = "Primary"
+    screenGui.FlintUI.LibraryData.ThemeElements[button] = "TextPrimary"
     
     return buttonFrame
 end
