@@ -1,4 +1,4 @@
-local Library = {}
+local Flint = {}
 
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
@@ -165,9 +165,8 @@ end
 
 local function ApplyTheme(themeElements)
     local colors = GetTheme()
-    
     for element, colorKey in pairs(themeElements) do
-        if element and colors[colorKey] then
+        if element and element.Parent and colors[colorKey] then
             if element:IsA("Frame") or element:IsA("TextButton") or element:IsA("TextLabel") or element:IsA("TextBox") or element:IsA("ScrollingFrame") then
                 element.BackgroundColor3 = colors[colorKey]
             end
@@ -176,11 +175,19 @@ local function ApplyTheme(themeElements)
                     element.TextColor3 = colors[colorKey]
                 end
             end
+            if element:IsA("ScrollingFrame") then
+                element.ScrollBarImageColor3 = colors[colorKey] or colors.DarkElement
+            end
         end
     end
 end
 
-function Library:Init()
+function Flint:CreateWindow(options)
+    options = options or {}
+    local title = options.Title or "Flint UI Library - v3.0"
+    local size = options.Size or UDim2.new(0, 500, 0, 350)
+    local position = options.Position or UDim2.new(0.5, -250, 0.5, -175)
+
     local ScreenGui = Instance.new("ScreenGui")
     ScreenGui.Name = "FlintUILibrary"
     ScreenGui.ResetOnSpawn = false
@@ -231,8 +238,8 @@ function Library:Init()
     
     local MainFrame = Instance.new("Frame")
     MainFrame.Name = "MainFrame"
-    MainFrame.Size = UDim2.new(0, 500, 0, 350)
-    MainFrame.Position = UDim2.new(0.5, -250, 0.5, -175)
+    MainFrame.Size = size
+    MainFrame.Position = position
     MainFrame.BackgroundColor3 = GetTheme().Background
     MainFrame.BorderSizePixel = 0
     MainFrame.ClipsDescendants = true
@@ -265,7 +272,7 @@ function Library:Init()
     TopBarTitle.Size = UDim2.new(1, -100, 1, 0)
     TopBarTitle.Position = UDim2.new(0, 15, 0, 0)
     TopBarTitle.BackgroundTransparency = 1
-    TopBarTitle.Text = "Flint UI Library  -  v3.0"
+    TopBarTitle.Text = title
     TopBarTitle.TextColor3 = GetTheme().Primary
     TopBarTitle.TextSize = 13
     TopBarTitle.Font = Enum.Font.GothamBold
@@ -331,6 +338,7 @@ function Library:Init()
     LibraryData.ThemeElements[TopBarFill] = "SecondaryBackground"
     LibraryData.ThemeElements[TopBarTitle] = "TextPrimary"
     LibraryData.ThemeElements[MinimizeButton] = "ElementBackground"
+    LibraryData.ThemeElements[MinimizeButton] = "TextPrimary"
     LibraryData.ThemeElements[Sidebar] = "SecondaryBackground"
     LibraryData.ThemeElements[SidebarTitle] = "TextPrimary"
     LibraryData.ThemeElements[MinimizedIcon] = "Background"
@@ -341,10 +349,10 @@ function Library:Init()
         if Config.GUIVisible then
             MinimizedIcon.Visible = false
             MainFrame.Visible = true
-            local openTween = TweenService:Create(MainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = UDim2.new(0, 500, 0, 350)})
+            local openTween = TweenService:Create(MainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = size})
             openTween:Play()
         else
-            local closeTween = TweenService:Create(MainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.In), {Size = UDim2.new(0, 500, 0, 0)})
+            local closeTween = TweenService:Create(MainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.In), {Size = UDim2.new(0, size.X.Offset, 0, 0)})
             closeTween:Play()
             closeTween.Completed:Connect(function()
                 MainFrame.Visible = false
@@ -430,36 +438,23 @@ function Library:Init()
         end
     end)
     
-    local settingsTab = Library:CreateTab(LibraryData, "Settings", "S", true)
-    
-    Library:CreateSection(settingsTab, "UI SETTINGS")
-    
-    Library:CreateSlider(settingsTab, "Drag Smoothing", 1, 100, math.floor(Config.DragSmoothing * 100), function(value)
-        Config.DragSmoothing = value / 100
-    end)
-    
-    Library:CreateKeybind(settingsTab, "Toggle GUI Keybind", Config.ToggleKeybind, function(newKey)
-        Config.ToggleKeybind = newKey
-    end)
-    
-    Library:CreateSection(settingsTab, "THEME SETTINGS")
-    
-    local themeNames = {}
-    for themeName, _ in pairs(Themes) do
-        table.insert(themeNames, themeName)
-    end
-    table.sort(themeNames)
-    
-    Library:CreateDropdown(settingsTab, "Select Theme", themeNames, Config.CurrentTheme, function(selected)
-        Config.CurrentTheme = selected
-        ApplyTheme(LibraryData.ThemeElements)
-    end)
-    
     return LibraryData
 end
 
-function Library:CreateTab(libData, name, icon, autoSelect)
-    local yOffset = 55 + (#libData.Tabs * 40)
+function Flint:Init()
+    return Flint:CreateWindow()
+end
+
+function Flint:CreateTab(libData, name, icon, autoSelect)
+    local tabCount = #libData.Tabs + 1
+    local yOffset
+    if name == "Settings" then
+        yOffset = 55 + (#libData.Tabs * 40)
+        icon = "⚙️"
+    else
+        yOffset = 55 + ((#libData.Tabs - (libData.Tabs.Settings and 1 or 0)) * 40)
+        icon = icon or tostring(tabCount)
+    end
     
     local tabButton = Instance.new("TextButton")
     tabButton.Name = name .. "Button"
@@ -520,6 +515,7 @@ function Library:CreateTab(libData, name, icon, autoSelect)
     libData.ThemeElements[tabButton] = "ElementBackground"
     libData.ThemeElements[buttonLabel] = "TextSecondary"
     libData.ThemeElements[iconLabel] = "TextSecondary"
+    libData.ThemeElements[tabContent] = "DarkElement"
     
     local tabData = {
         Name = name,
@@ -530,7 +526,11 @@ function Library:CreateTab(libData, name, icon, autoSelect)
         Elements = {}
     }
     
-    table.insert(libData.Tabs, tabData)
+    if name == "Settings" then
+        libData.Tabs.Settings = tabData
+    else
+        table.insert(libData.Tabs, tabData)
+    end
     
     local function SwitchTab()
         if libData.CurrentTab == tabData then return end
@@ -540,6 +540,12 @@ function Library:CreateTab(libData, name, icon, autoSelect)
             tab.Button.BackgroundColor3 = GetTheme().ElementBackground
             tab.Label.TextColor3 = GetTheme().TextSecondary
             tab.Icon.TextColor3 = GetTheme().TextSecondary
+        end
+        if libData.Tabs.Settings then
+            libData.Tabs.Settings.Content.Visible = false
+            libData.Tabs.Settings.Button.BackgroundColor3 = GetTheme().ElementBackground
+            libData.Tabs.Settings.Label.TextColor3 = GetTheme().TextSecondary
+            libData.Tabs.Settings.Icon.TextColor3 = GetTheme().TextSecondary
         end
         
         tabContent.Visible = true
@@ -555,10 +561,36 @@ function Library:CreateTab(libData, name, icon, autoSelect)
         SwitchTab()
     end
     
+    if name == "Settings" then
+        local settingsTab = tabContent
+        Flint:CreateSection(settingsTab, "UI SETTINGS")
+        
+        Flint:CreateSlider(settingsTab, "Drag Smoothing", 1, 100, math.floor(Config.DragSmoothing * 100), function(value)
+            Config.DragSmoothing = value / 100
+        end)
+        
+        Flint:CreateKeybind(settingsTab, "Toggle GUI Keybind", Config.ToggleKeybind, function(newKey)
+            Config.ToggleKeybind = newKey
+        end)
+        
+        Flint:CreateSection(settingsTab, "THEME SETTINGS")
+        
+        local themeNames = {}
+        for themeName, _ in pairs(Themes) do
+            table.insert(themeNames, themeName)
+        end
+        table.sort(themeNames)
+        
+        Flint:CreateDropdown(settingsTab, "Select Theme", themeNames, Config.CurrentTheme, function(selected)
+            Config.CurrentTheme = selected
+            ApplyTheme(libData.ThemeElements)
+        end)
+    end
+    
     return tabContent
 end
 
-function Library:CreateSection(parent, text)
+function Flint:CreateSection(parent, text)
     local section = Instance.new("Frame")
     section.Size = UDim2.new(1, -15, 0, 25)
     section.BackgroundTransparency = 1
@@ -574,10 +606,12 @@ function Library:CreateSection(parent, text)
     sectionLabel.TextXAlignment = Enum.TextXAlignment.Left
     sectionLabel.Parent = section
     
+    parent:FindFirstAncestorOfClass("ScreenGui").FlintUILibrary.ThemeElements[sectionLabel] = "TextPrimary"
+    
     return section
 end
 
-function Library:CreateToggle(parent, text, defaultValue, callback)
+function Flint:CreateToggle(parent, text, defaultValue, callback)
     local toggleFrame = Instance.new("Frame")
     toggleFrame.Size = UDim2.new(1, -15, 0, 35)
     toggleFrame.BackgroundColor3 = GetTheme().ElementBackground
@@ -626,22 +660,25 @@ function Library:CreateToggle(parent, text, defaultValue, callback)
     
     toggleButton.MouseButton1Click:Connect(function()
         toggled = not toggled
-        
         local colorTween = TweenService:Create(toggleButton, TweenInfo.new(0.2), {BackgroundColor3 = toggled and GetTheme().Primary or GetTheme().DarkElement})
         local posTween = TweenService:Create(toggleCircle, TweenInfo.new(0.2), {Position = toggled and UDim2.new(1, -16, 0.5, -7) or UDim2.new(0, 2, 0.5, -7)})
-        
         colorTween:Play()
         posTween:Play()
-        
         if callback then
             callback(toggled)
         end
     end)
     
+    local screenGui = parent:FindFirstAncestorOfClass("ScreenGui")
+    screenGui.FlintUILibrary.ThemeElements[toggleFrame] = "ElementBackground"
+    screenGui.FlintUILibrary.ThemeElements[label] = "TextPrimary"
+    screenGui.FlintUILibrary.ThemeElements[toggleButton] = toggled and "Primary" or "DarkElement"
+    screenGui.FlintUILibrary.ThemeElements[toggleCircle] = "Background"
+    
     return toggleFrame
 end
 
-function Library:CreateSlider(parent, text, min, max, defaultValue, callback)
+function Flint:CreateSlider(parent, text, min, max, defaultValue, callback)
     local sliderFrame = Instance.new("Frame")
     sliderFrame.Size = UDim2.new(1, -15, 0, 50)
     sliderFrame.BackgroundColor3 = GetTheme().ElementBackground
@@ -710,10 +747,8 @@ function Library:CreateSlider(parent, text, min, max, defaultValue, callback)
         local percent = math.clamp((input.Position.X - sliderBar.AbsolutePosition.X) / sliderBar.AbsoluteSize.X, 0, 1)
         local value = math.floor(min + (max - min) * percent)
         currentValue = value
-        
         sliderFill.Size = UDim2.new(percent, 0, 1, 0)
         valueLabel.Text = tostring(value)
-        
         if callback then
             callback(value)
         end
@@ -739,10 +774,17 @@ function Library:CreateSlider(parent, text, min, max, defaultValue, callback)
         end
     end)
     
+    local screenGui = parent:FindFirstAncestorOfClass("ScreenGui")
+    screenGui.FlintUILibrary.ThemeElements[sliderFrame] = "ElementBackground"
+    screenGui.FlintUILibrary.ThemeElements[label] = "TextPrimary"
+    screenGui.FlintUILibrary.ThemeElements[valueLabel] = "TextSecondary"
+    screenGui.FlintUILibrary.ThemeElements[sliderBar] = "DarkElement"
+    screenGui.FlintUILibrary.ThemeElements[sliderFill] = "Primary"
+    
     return sliderFrame
 end
 
-function Library:CreateKeybind(parent, text, defaultKey, callback)
+function Flint:CreateKeybind(parent, text, defaultKey, callback)
     local keybindFrame = Instance.new("Frame")
     keybindFrame.Size = UDim2.new(1, -15, 0, 35)
     keybindFrame.BackgroundColor3 = GetTheme().ElementBackground
@@ -799,17 +841,22 @@ function Library:CreateKeybind(parent, text, defaultKey, callback)
             keybindButton.Text = input.KeyCode.Name
             keybindButton.BackgroundColor3 = GetTheme().DarkElement
             keybindButton.TextColor3 = GetTheme().Primary
-            
             if callback then
                 callback(input.KeyCode)
             end
         end
     end)
     
+    local screenGui = parent:FindFirstAncestorOfClass("ScreenGui")
+    screenGui.FlintUILibrary.ThemeElements[keybindFrame] = "ElementBackground"
+    screenGui.FlintUILibrary.ThemeElements[label] = "TextPrimary"
+    screenGui.FlintUILibrary.ThemeElements[keybindButton] = "DarkElement"
+    screenGui.FlintUILibrary.ThemeElements[keybindButton] = "TextPrimary"
+    
     return keybindFrame
 end
 
-function Library:CreateDropdown(parent, text, options, defaultValue, callback)
+function Flint:CreateDropdown(parent, text, options, defaultValue, callback)
     local dropdownFrame = Instance.new("Frame")
     dropdownFrame.Size = UDim2.new(1, -15, 0, 35)
     dropdownFrame.BackgroundColor3 = GetTheme().ElementBackground
@@ -905,11 +952,9 @@ function Library:CreateDropdown(parent, text, options, defaultValue, callback)
                 selectedValue = option
                 dropdownButton.Text = option
                 isOpen = false
-                
                 TweenService:Create(dropdownList, TweenInfo.new(0.2), {Size = UDim2.new(0, 100, 0, 0)}):Play()
                 task.wait(0.2)
                 dropdownList.Visible = false
-                
                 if callback then
                     callback(option)
                 end
@@ -922,20 +967,20 @@ function Library:CreateDropdown(parent, text, options, defaultValue, callback)
             optionButton.MouseLeave:Connect(function()
                 optionButton.BackgroundColor3 = GetTheme().DarkElement
             end)
+            
+            local screenGui = parent:FindFirstAncestorOfClass("ScreenGui")
+            screenGui.FlintUILibrary.ThemeElements[optionButton] = "DarkElement"
         end
     end
     
     dropdownButton.MouseButton1Click:Connect(function()
         isOpen = not isOpen
-        
         if isOpen then
             updateOptions()
-            
             local buttonPos = dropdownButton.AbsolutePosition
             local buttonSize = dropdownButton.AbsoluteSize
             dropdownList.Position = UDim2.new(0, buttonPos.X, 0, buttonPos.Y + buttonSize.Y + 5)
             dropdownList.Visible = true
-            
             local targetHeight = math.min(listLayout.AbsoluteContentSize.Y + 4, 150)
             TweenService:Create(dropdownList, TweenInfo.new(0.2), {Size = UDim2.new(0, 100, 0, targetHeight)}):Play()
         else
@@ -945,10 +990,17 @@ function Library:CreateDropdown(parent, text, options, defaultValue, callback)
         end
     end)
     
+    local screenGui = parent:FindFirstAncestorOfClass("ScreenGui")
+    screenGui.FlintUILibrary.ThemeElements[dropdownFrame] = "ElementBackground"
+    screenGui.FlintUILibrary.ThemeElements[label] = "TextPrimary"
+    screenGui.FlintUILibrary.ThemeElements[dropdownButton] = "DarkElement"
+    screenGui.FlintUILibrary.ThemeElements[dropdownButton] = "TextPrimary"
+    screenGui.FlintUILibrary.ThemeElements[dropdownList] = "ElementBackground"
+    
     return dropdownFrame
 end
 
-function Library:CreateTextBox(parent, text, defaultValue, callback)
+function Flint:CreateTextBox(parent, text, defaultValue, callback)
     local textboxFrame = Instance.new("Frame")
     textboxFrame.Size = UDim2.new(1, -15, 0, 50)
     textboxFrame.BackgroundColor3 = GetTheme().ElementBackground
@@ -990,16 +1042,21 @@ function Library:CreateTextBox(parent, text, defaultValue, callback)
     
     textBox.FocusLost:Connect(function()
         currentValue = textBox.Text
-        
         if callback then
             callback(textBox.Text)
         end
     end)
     
+    local screenGui = parent:FindFirstAncestorOfClass("ScreenGui")
+    screenGui.FlintUILibrary.ThemeElements[textboxFrame] = "ElementBackground"
+    screenGui.FlintUILibrary.ThemeElements[label] = "TextPrimary"
+    screenGui.FlintUILibrary.ThemeElements[textBox] = "DarkElement"
+    screenGui.FlintUILibrary.ThemeElements[textBox] = "TextPrimary"
+    
     return textboxFrame
 end
 
-function Library:CreateButton(parent, text, callback)
+function Flint:CreateButton(parent, text, callback)
     local buttonFrame = Instance.new("Frame")
     buttonFrame.Size = UDim2.new(1, -15, 0, 35)
     buttonFrame.BackgroundColor3 = GetTheme().ElementBackground
@@ -1029,7 +1086,6 @@ function Library:CreateButton(parent, text, callback)
         TweenService:Create(button, TweenInfo.new(0.1), {BackgroundColor3 = GetTheme().DarkElement}):Play()
         task.wait(0.1)
         TweenService:Create(button, TweenInfo.new(0.1), {BackgroundColor3 = GetTheme().Primary}):Play()
-        
         if callback then
             callback()
         end
@@ -1043,10 +1099,15 @@ function Library:CreateButton(parent, text, callback)
         TweenService:Create(button, TweenInfo.new(0.1), {BackgroundColor3 = GetTheme().Primary}):Play()
     end)
     
+    local screenGui = parent:FindFirstAncestorOfClass("ScreenGui")
+    screenGui.FlintUILibrary.ThemeElements[buttonFrame] = "ElementBackground"
+    screenGui.FlintUILibrary.ThemeElements[button] = "Primary"
+    screenGui.FlintUILibrary.ThemeElements[button] = "TextPrimary"
+    
     return buttonFrame
 end
 
 print("Flint UI Library v3.0 loaded successfully!")
 print("Press " .. Config.ToggleKeybind.Name .. " to toggle GUI visibility")
 
-return Library
+return Flint
