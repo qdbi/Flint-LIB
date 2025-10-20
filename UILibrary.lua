@@ -156,8 +156,7 @@ local Config = {
     CurrentTheme = "Default",
     DragSmoothing = 0.15,
     GUIVisible = true,
-    ToggleKeybind = Enum.KeyCode.RightShift,
-    Transparency = 1.0
+    ToggleKeybind = Enum.KeyCode.RightShift
 }
 
 local LibraryData = nil
@@ -168,28 +167,18 @@ end
 
 local function ApplyTheme(themeElements)
     local colors = GetTheme()
-    for element, propertyData in pairs(themeElements) do
-        if element and element.Parent then
-            local colorKey = propertyData.Background or propertyData.Text or propertyData.ScrollBar or "Primary"
-            if element:IsA("Frame") or element:IsA("TextButton") or element:IsA("ScrollingFrame") then
-                if propertyData.Background and colors[propertyData.Background] then
-                    element.BackgroundColor3 = colors[propertyData.Background]
-                    if propertyData.Background then
-                        element.BackgroundTransparency = Config.Transparency
-                    end
-                end
+    for element, colorKey in pairs(themeElements) do
+        if element and element.Parent and colors[colorKey] then
+            if element:IsA("Frame") or element:IsA("TextButton") or element:IsA("TextLabel") or element:IsA("TextBox") or element:IsA("ScrollingFrame") then
+                element.BackgroundColor3 = colors[colorKey]
             end
             if element:IsA("TextLabel") or element:IsA("TextButton") or element:IsA("TextBox") then
-                if propertyData.Text and colors[propertyData.Text] then
-                    element.TextColor3 = colors[propertyData.Text]
-                    if propertyData.Text then
-                        element.TextTransparency = Config.Transparency
-                    end
+                if colorKey:find("Text") then
+                    element.TextColor3 = colors[colorKey]
                 end
             end
-            if element:IsA("ScrollingFrame") and propertyData.ScrollBar and colors[propertyData.ScrollBar] then
-                element.ScrollBarImageColor3 = colors[propertyData.ScrollBar]
-                element.ScrollBarImageTransparency = Config.Transparency
+            if element:IsA("ScrollingFrame") then
+                element.ScrollBarImageColor3 = colors[colorKey] or colors.DarkElement
             end
         end
     end
@@ -247,7 +236,6 @@ function Flint:CreateWindow(options)
     MinimizedIcon.Size = UDim2.new(0, 50, 0, 50)
     MinimizedIcon.Position = UDim2.new(0, 20, 0, 20)
     MinimizedIcon.BackgroundColor3 = GetTheme().Background
-    MinimizedIcon.BackgroundTransparency = Config.Transparency
     MinimizedIcon.BorderSizePixel = 0
     MinimizedIcon.Visible = false
     MinimizedIcon.Parent = ScreenGui
@@ -261,7 +249,6 @@ function Flint:CreateWindow(options)
     IconLabel.BackgroundTransparency = 1
     IconLabel.Text = "F"
     IconLabel.TextColor3 = GetTheme().Primary
-    IconLabel.TextTransparency = Config.Transparency
     IconLabel.TextSize = 24
     IconLabel.Font = Enum.Font.GothamBold
     IconLabel.Parent = MinimizedIcon
@@ -277,7 +264,6 @@ function Flint:CreateWindow(options)
     MainFrame.Size = size
     MainFrame.Position = position
     MainFrame.BackgroundColor3 = GetTheme().Background
-    MainFrame.BackgroundTransparency = Config.Transparency
     MainFrame.BorderSizePixel = 0
     MainFrame.ClipsDescendants = true
     MainFrame.Parent = ScreenGui
@@ -291,7 +277,6 @@ function Flint:CreateWindow(options)
     TopBar.Size = UDim2.new(1, 0, 0, 35)
     TopBar.Position = UDim2.new(0, 0, 0, 0)
     TopBar.BackgroundColor3 = GetTheme().SecondaryBackground
-    TopBar.BackgroundTransparency = Config.Transparency
     TopBar.BorderSizePixel = 0
     TopBar.Parent = MainFrame
 
@@ -303,7 +288,6 @@ function Flint:CreateWindow(options)
     TopBarFill.Size = UDim2.new(1, 0, 0, 12)
     TopBarFill.Position = UDim2.new(0, 0, 1, -12)
     TopBarFill.BackgroundColor3 = GetTheme().SecondaryBackground
-    TopBarFill.BackgroundTransparency = Config.Transparency
     TopBarFill.BorderSizePixel = 0
     TopBarFill.Parent = TopBar
 
@@ -313,7 +297,6 @@ function Flint:CreateWindow(options)
     TopBarTitle.BackgroundTransparency = 1
     TopBarTitle.Text = title
     TopBarTitle.TextColor3 = GetTheme().Primary
-    TopBarTitle.TextTransparency = Config.Transparency
     TopBarTitle.TextSize = 13
     TopBarTitle.Font = Enum.Font.GothamBold
     TopBarTitle.TextXAlignment = Enum.TextXAlignment.Left
@@ -323,11 +306,9 @@ function Flint:CreateWindow(options)
     MinimizeButton.Size = UDim2.new(0, 30, 0, 25)
     MinimizeButton.Position = UDim2.new(1, -40, 0, 5)
     MinimizeButton.BackgroundColor3 = GetTheme().ElementBackground
-    MinimizeButton.BackgroundTransparency = Config.Transparency
     MinimizeButton.BorderSizePixel = 0
     MinimizeButton.Text = "–"
-    MinimizeButton.TextColor3 = GetTheme().TextPrimary
-    MinimizeButton.TextTransparency = Config.Transparency
+    MinimizeButton.TextColor3 = GetTheme().Primary
     MinimizeButton.TextSize = 16
     MinimizeButton.Font = Enum.Font.GothamBold
     MinimizeButton.Parent = TopBar
@@ -341,7 +322,6 @@ function Flint:CreateWindow(options)
     Sidebar.Size = UDim2.new(0, 150, 1, -35)
     Sidebar.Position = UDim2.new(0, 0, 0, 35)
     Sidebar.BackgroundColor3 = GetTheme().SecondaryBackground
-    Sidebar.BackgroundTransparency = Config.Transparency
     Sidebar.BorderSizePixel = 0
     Sidebar.Parent = MainFrame
 
@@ -352,7 +332,6 @@ function Flint:CreateWindow(options)
     SidebarTitle.BackgroundTransparency = 1
     SidebarTitle.Text = "MENU"
     SidebarTitle.TextColor3 = GetTheme().Primary
-    SidebarTitle.TextTransparency = Config.Transparency
     SidebarTitle.TextSize = 16
     SidebarTitle.Font = Enum.Font.GothamBold
     SidebarTitle.TextXAlignment = Enum.TextXAlignment.Left
@@ -365,71 +344,28 @@ function Flint:CreateWindow(options)
     ContentFrame.BackgroundTransparency = 1
     ContentFrame.Parent = MainFrame
 
-    local SettingsButton = Instance.new("TextButton")
-    SettingsButton.Size = UDim2.new(0, 50, 0, 50)
-    SettingsButton.Position = UDim2.new(0, 10, 1, -60)
-    SettingsButton.BackgroundColor3 = GetTheme().ElementBackground
-    SettingsButton.BackgroundTransparency = Config.Transparency
-    SettingsButton.BorderSizePixel = 0
-    SettingsButton.Text = "⚙️"
-    SettingsButton.TextColor3 = GetTheme().TextPrimary
-    SettingsButton.TextTransparency = Config.Transparency
-    SettingsButton.TextSize = 24
-    SettingsButton.Font = Enum.Font.GothamBold
-    SettingsButton.Parent = MainFrame
-
-    local SettingsButtonCorner = Instance.new("UICorner")
-    SettingsButtonCorner.CornerRadius = UDim.new(0, 12)
-    SettingsButtonCorner.Parent = SettingsButton
-
-    local SettingsFrame = Instance.new("ScrollingFrame")
-    SettingsFrame.Name = "SettingsFrame"
-    SettingsFrame.Size = UDim2.new(1, -165, 1, -50)
-    SettingsFrame.Position = UDim2.new(0, 158, 0, 43)
-    SettingsFrame.BackgroundTransparency = 1
-    SettingsFrame.BorderSizePixel = 0
-    SettingsFrame.ScrollBarThickness = 3
-    SettingsFrame.ScrollBarImageColor3 = GetTheme().DarkElement
-    SettingsFrame.ScrollBarImageTransparency = Config.Transparency
-    SettingsFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
-    SettingsFrame.Visible = false
-    SettingsFrame.Parent = MainFrame
-
-    local SettingsLayout = Instance.new("UIListLayout")
-    SettingsLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    SettingsLayout.Padding = UDim.new(0, 8)
-    SettingsLayout.Parent = SettingsFrame
-
-    SettingsLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-        SettingsFrame.CanvasSize = UDim2.new(0, 0, 0, SettingsLayout.AbsoluteContentSize.Y + 15)
-    end)
-
     LibraryData.MainFrame = MainFrame
     LibraryData.Sidebar = Sidebar
     LibraryData.ContentFrame = ContentFrame
     LibraryData.DropdownContainer = DropdownContainer
     LibraryData.MinimizedIcon = MinimizedIcon
-    LibraryData.SettingsFrame = SettingsFrame
-    LibraryData.SettingsButton = SettingsButton
 
-    LibraryData.ThemeElements[MainFrame] = {Background = "Background"}
-    LibraryData.ThemeElements[TopBar] = {Background = "SecondaryBackground"}
-    LibraryData.ThemeElements[TopBarFill] = {Background = "SecondaryBackground"}
-    LibraryData.ThemeElements[TopBarTitle] = {Text = "TextPrimary"}
-    LibraryData.ThemeElements[MinimizeButton] = {Background = "ElementBackground", Text = "TextPrimary"}
-    LibraryData.ThemeElements[Sidebar] = {Background = "SecondaryBackground"}
-    LibraryData.ThemeElements[SidebarTitle] = {Text = "TextPrimary"}
-    LibraryData.ThemeElements[MinimizedIcon] = {Background = "Background"}
-    LibraryData.ThemeElements[IconLabel] = {Text = "TextPrimary"}
-    LibraryData.ThemeElements[SettingsButton] = {Background = "ElementBackground", Text = "TextPrimary"}
-    LibraryData.ThemeElements[SettingsFrame] = {ScrollBar = "DarkElement"}
+    LibraryData.ThemeElements[MainFrame] = "Background"
+    LibraryData.ThemeElements[TopBar] = "SecondaryBackground"
+    LibraryData.ThemeElements[TopBarFill] = "SecondaryBackground"
+    LibraryData.ThemeElements[TopBarTitle] = "TextPrimary"
+    LibraryData.ThemeElements[MinimizeButton] = "ElementBackground"
+    LibraryData.ThemeElements[MinimizeButton] = "TextPrimary"
+    LibraryData.ThemeElements[Sidebar] = "SecondaryBackground"
+    LibraryData.ThemeElements[SidebarTitle] = "TextPrimary"
+    LibraryData.ThemeElements[MinimizedIcon] = "Background"
+    LibraryData.ThemeElements[IconLabel] = "TextPrimary"
 
     local function ToggleGUI()
         Config.GUIVisible = not Config.GUIVisible
         if Config.GUIVisible then
             MinimizedIcon.Visible = false
             MainFrame.Visible = true
-            SettingsButton.Visible = true
             local openTween = TweenService:Create(MainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = size})
             openTween:Play()
         else
@@ -437,7 +373,6 @@ function Flint:CreateWindow(options)
             closeTween:Play()
             closeTween.Completed:Connect(function()
                 MainFrame.Visible = false
-                SettingsButton.Visible = false
                 MinimizedIcon.Visible = true
             end)
         end
@@ -520,66 +455,6 @@ function Flint:CreateWindow(options)
         end
     end)
 
-    local function SwitchToSettings()
-        if LibraryData.CurrentTab == "Settings" then return end
-
-        for _, tab in pairs(LibraryData.Tabs) do
-            tab.Content.Visible = false
-            tab.Button.BackgroundColor3 = GetTheme().ElementBackground
-            tab.Label.TextColor3 = GetTheme().TextSecondary
-            tab.Icon.TextColor3 = GetTheme().TextSecondary
-        end
-        SettingsFrame.Visible = true
-        ContentFrame.Visible = false
-        SettingsButton.BackgroundColor3 = GetTheme().Primary
-        SettingsButton.TextColor3 = GetTheme().Background
-        LibraryData.CurrentTab = "Settings"
-    end
-
-    local function SwitchToTab(tabData)
-        if LibraryData.CurrentTab == tabData then return end
-
-        for _, tab in pairs(LibraryData.Tabs) do
-            tab.Content.Visible = false
-            tab.Button.BackgroundColor3 = GetTheme().ElementBackground
-            tab.Label.TextColor3 = GetTheme().TextSecondary
-            tab.Icon.TextColor3 = GetTheme().TextSecondary
-        end
-        SettingsFrame.Visible = false
-        ContentFrame.Visible = true
-        tabData.Content.Visible = true
-        tabData.Button.BackgroundColor3 = GetTheme().Primary
-        tabData.Label.TextColor3 = GetTheme().Background
-        tabData.Icon.TextColor3 = GetTheme().Background
-        SettingsButton.BackgroundColor3 = GetTheme().ElementBackground
-        SettingsButton.TextColor3 = GetTheme().TextPrimary
-        LibraryData.CurrentTab = tabData
-    end
-
-    SettingsButton.MouseButton1Click:Connect(SwitchToSettings)
-
-    Flint:CreateSection(SettingsFrame, "UI SETTINGS")
-    Flint:CreateSlider(SettingsFrame, "Drag Smoothing", 1, 100, math.floor(Config.DragSmoothing * 100), function(value)
-        Config.DragSmoothing = value / 100
-    end)
-    Flint:CreateSlider(SettingsFrame, "GUI Transparency", 30, 100, math.floor(Config.Transparency * 100), function(value)
-        Config.Transparency = value / 100
-        ApplyTheme(LibraryData.ThemeElements)
-    end)
-    Flint:CreateKeybind(SettingsFrame, "Toggle GUI Keybind", Config.ToggleKeybind, function(newKey)
-        Config.ToggleKeybind = newKey
-    end)
-    Flint:CreateSection(SettingsFrame, "THEME SETTINGS")
-    local themeNames = {}
-    for themeName, _ in pairs(Themes) do
-        table.insert(themeNames, themeName)
-    end
-    table.sort(themeNames)
-    Flint:CreateDropdown(SettingsFrame, "Select Theme", themeNames, Config.CurrentTheme, function(selected)
-        Config.CurrentTheme = selected
-        ApplyTheme(LibraryData.ThemeElements)
-    end)
-
     return LibraryData
 end
 
@@ -595,7 +470,6 @@ function Flint:Notify(message)
     local notification = Instance.new("Frame")
     notification.Size = UDim2.new(0, 190, 0, 50)
     notification.BackgroundColor3 = GetTheme().ElementBackground
-    notification.BackgroundTransparency = Config.Transparency
     notification.BorderSizePixel = 0
     notification.Parent = NotificationContainer
 
@@ -609,7 +483,6 @@ function Flint:Notify(message)
     notificationLabel.BackgroundTransparency = 1
     notificationLabel.Text = message
     notificationLabel.TextColor3 = GetTheme().TextPrimary
-    notificationLabel.TextTransparency = Config.Transparency
     notificationLabel.TextSize = 10
     notificationLabel.Font = Enum.Font.Gotham
     notificationLabel.TextWrapped = true
@@ -617,8 +490,8 @@ function Flint:Notify(message)
     notificationLabel.TextYAlignment = Enum.TextYAlignment.Top
     notificationLabel.Parent = notification
 
-    LibraryData.ThemeElements[notification] = {Background = "ElementBackground"}
-    LibraryData.ThemeElements[notificationLabel] = {Text = "TextPrimary"}
+    LibraryData.ThemeElements[notification] = "ElementBackground"
+    LibraryData.ThemeElements[notificationLabel] = "TextPrimary"
 
     local tweenIn = TweenService:Create(notification, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Position = UDim2.new(0, 0, 0, 0)})
     tweenIn:Play()
@@ -635,15 +508,20 @@ end
 
 function Flint:CreateTab(libData, name, icon, autoSelect)
     local tabCount = #libData.Tabs + 1
-    local yOffset = 55 + (#libData.Tabs * 40)
-    icon = icon or tostring(tabCount)
+    local yOffset
+    if name == "Settings" then
+        yOffset = 55 + (#libData.Tabs * 40)
+        icon = "⚙️"
+    else
+        yOffset = 55 + ((#libData.Tabs - (libData.Tabs.Settings and 1 or 0)) * 40)
+        icon = icon or tostring(tabCount)
+    end
 
     local tabButton = Instance.new("TextButton")
     tabButton.Name = name .. "Button"
     tabButton.Size = UDim2.new(1, -20, 0, 35)
     tabButton.Position = UDim2.new(0, 10, 0, yOffset)
     tabButton.BackgroundColor3 = GetTheme().ElementBackground
-    tabButton.BackgroundTransparency = Config.Transparency
     tabButton.BorderSizePixel = 0
     tabButton.Text = ""
     tabButton.AutoButtonColor = false
@@ -659,7 +537,6 @@ function Flint:CreateTab(libData, name, icon, autoSelect)
     buttonLabel.BackgroundTransparency = 1
     buttonLabel.Text = name
     buttonLabel.TextColor3 = GetTheme().TextSecondary
-    buttonLabel.TextTransparency = Config.Transparency
     buttonLabel.TextSize = 12
     buttonLabel.Font = Enum.Font.Gotham
     buttonLabel.TextXAlignment = Enum.TextXAlignment.Left
@@ -671,7 +548,6 @@ function Flint:CreateTab(libData, name, icon, autoSelect)
     iconLabel.BackgroundTransparency = 1
     iconLabel.Text = icon
     iconLabel.TextColor3 = GetTheme().TextSecondary
-    iconLabel.TextTransparency = Config.Transparency
     iconLabel.TextSize = 14
     iconLabel.Font = Enum.Font.GothamBold
     iconLabel.Parent = tabButton
@@ -684,7 +560,6 @@ function Flint:CreateTab(libData, name, icon, autoSelect)
     tabContent.BorderSizePixel = 0
     tabContent.ScrollBarThickness = 3
     tabContent.ScrollBarImageColor3 = GetTheme().DarkElement
-    tabContent.ScrollBarImageTransparency = Config.Transparency
     tabContent.CanvasSize = UDim2.new(0, 0, 0, 0)
     tabContent.Visible = false
     tabContent.Parent = libData.ContentFrame
@@ -698,10 +573,10 @@ function Flint:CreateTab(libData, name, icon, autoSelect)
         tabContent.CanvasSize = UDim2.new(0, 0, 0, layout.AbsoluteContentSize.Y + 15)
     end)
 
-    LibraryData.ThemeElements[tabButton] = {Background = "ElementBackground"}
-    LibraryData.ThemeElements[buttonLabel] = {Text = "TextSecondary"}
-    LibraryData.ThemeElements[iconLabel] = {Text = "TextSecondary"}
-    LibraryData.ThemeElements[tabContent] = {ScrollBar = "DarkElement"}
+    libData.ThemeElements[tabButton] = "ElementBackground"
+    libData.ThemeElements[buttonLabel] = "TextSecondary"
+    libData.ThemeElements[iconLabel] = "TextSecondary"
+    libData.ThemeElements[tabContent] = "DarkElement"
 
     local tabData = {
         Name = name,
@@ -712,30 +587,65 @@ function Flint:CreateTab(libData, name, icon, autoSelect)
         Elements = {}
     }
 
-    table.insert(libData.Tabs, tabData)
+    if name == "Settings" then
+        libData.Tabs.Settings = tabData
+    else
+        table.insert(libData.Tabs, tabData)
+    end
 
     local function SwitchTab()
-        libData.CurrentTab = tabData
+        if libData.CurrentTab == tabData then return end
+
         for _, tab in pairs(libData.Tabs) do
             tab.Content.Visible = false
             tab.Button.BackgroundColor3 = GetTheme().ElementBackground
             tab.Label.TextColor3 = GetTheme().TextSecondary
             tab.Icon.TextColor3 = GetTheme().TextSecondary
         end
-        libData.SettingsFrame.Visible = false
-        libData.ContentFrame.Visible = true
+        if libData.Tabs.Settings then
+            libData.Tabs.Settings.Content.Visible = false
+            libData.Tabs.Settings.Button.BackgroundColor3 = GetTheme().ElementBackground
+            libData.Tabs.Settings.Label.TextColor3 = GetTheme().TextSecondary
+            libData.Tabs.Settings.Icon.TextColor3 = GetTheme().TextSecondary
+        end
+
         tabContent.Visible = true
         tabButton.BackgroundColor3 = GetTheme().Primary
         buttonLabel.TextColor3 = GetTheme().Background
         iconLabel.TextColor3 = GetTheme().Background
-        libData.SettingsButton.BackgroundColor3 = GetTheme().ElementBackground
-        libData.SettingsButton.TextColor3 = GetTheme().TextPrimary
+        libData.CurrentTab = tabData
     end
 
     tabButton.MouseButton1Click:Connect(SwitchTab)
 
     if autoSelect or #libData.Tabs == 1 then
         SwitchTab()
+    end
+
+    if name == "Settings" then
+        local settingsTab = tabContent
+        Flint:CreateSection(settingsTab, "UI SETTINGS")
+
+        Flint:CreateSlider(settingsTab, "Drag Smoothing", 1, 100, math.floor(Config.DragSmoothing * 100), function(value)
+            Config.DragSmoothing = value / 100
+        end)
+
+        Flint:CreateKeybind(settingsTab, "Toggle GUI Keybind", Config.ToggleKeybind, function(newKey)
+            Config.ToggleKeybind = newKey
+        end)
+
+        Flint:CreateSection(settingsTab, "THEME SETTINGS")
+
+        local themeNames = {}
+        for themeName, _ in pairs(Themes) do
+            table.insert(themeNames, themeName)
+        end
+        table.sort(themeNames)
+
+        Flint:CreateDropdown(settingsTab, "Select Theme", themeNames, Config.CurrentTheme, function(selected)
+            Config.CurrentTheme = selected
+            ApplyTheme(libData.ThemeElements)
+        end)
     end
 
     return tabContent
@@ -752,13 +662,12 @@ function Flint:CreateSection(parent, text)
     sectionLabel.BackgroundTransparency = 1
     sectionLabel.Text = text
     sectionLabel.TextColor3 = GetTheme().Primary
-    sectionLabel.TextTransparency = Config.Transparency
     sectionLabel.TextSize = 13
     sectionLabel.Font = Enum.Font.GothamBold
     sectionLabel.TextXAlignment = Enum.TextXAlignment.Left
     sectionLabel.Parent = section
 
-    LibraryData.ThemeElements[sectionLabel] = {Text = "TextPrimary"}
+    LibraryData.ThemeElements[sectionLabel] = "TextPrimary"
 
     return section
 end
@@ -767,7 +676,6 @@ function Flint:CreateToggle(parent, text, defaultValue, callback)
     local toggleFrame = Instance.new("Frame")
     toggleFrame.Size = UDim2.new(1, -15, 0, 35)
     toggleFrame.BackgroundColor3 = GetTheme().ElementBackground
-    toggleFrame.BackgroundTransparency = Config.Transparency
     toggleFrame.BorderSizePixel = 0
     toggleFrame.Parent = parent
 
@@ -781,7 +689,6 @@ function Flint:CreateToggle(parent, text, defaultValue, callback)
     label.BackgroundTransparency = 1
     label.Text = text
     label.TextColor3 = GetTheme().TextPrimary
-    label.TextTransparency = Config.Transparency
     label.TextSize = 11
     label.Font = Enum.Font.Gotham
     label.TextXAlignment = Enum.TextXAlignment.Left
@@ -793,7 +700,6 @@ function Flint:CreateToggle(parent, text, defaultValue, callback)
     toggleButton.Size = UDim2.new(0, 35, 0, 18)
     toggleButton.Position = UDim2.new(1, -42, 0.5, -9)
     toggleButton.BackgroundColor3 = toggled and GetTheme().Primary or GetTheme().DarkElement
-    toggleButton.BackgroundTransparency = Config.Transparency
     toggleButton.Text = ""
     toggleButton.AutoButtonColor = false
     toggleButton.Parent = toggleFrame
@@ -806,7 +712,6 @@ function Flint:CreateToggle(parent, text, defaultValue, callback)
     toggleCircle.Size = UDim2.new(0, 14, 0, 14)
     toggleCircle.Position = toggled and UDim2.new(1, -16, 0.5, -7) or UDim2.new(0, 2, 0.5, -7)
     toggleCircle.BackgroundColor3 = GetTheme().Background
-    toggleCircle.BackgroundTransparency = Config.Transparency
     toggleCircle.BorderSizePixel = 0
     toggleCircle.Parent = toggleButton
 
@@ -825,10 +730,10 @@ function Flint:CreateToggle(parent, text, defaultValue, callback)
         end
     end)
 
-    LibraryData.ThemeElements[toggleFrame] = {Background = "ElementBackground"}
-    LibraryData.ThemeElements[label] = {Text = "TextPrimary"}
-    LibraryData.ThemeElements[toggleButton] = {Background = toggled and "Primary" or "DarkElement"}
-    LibraryData.ThemeElements[toggleCircle] = {Background = "Background"}
+    LibraryData.ThemeElements[toggleFrame] = "ElementBackground"
+    LibraryData.ThemeElements[label] = "TextPrimary"
+    LibraryData.ThemeElements[toggleButton] = toggled and "Primary" or "DarkElement"
+    LibraryData.ThemeElements[toggleCircle] = "Background"
 
     return toggleFrame
 end
@@ -837,7 +742,6 @@ function Flint:CreateSlider(parent, text, min, max, defaultValue, callback)
     local sliderFrame = Instance.new("Frame")
     sliderFrame.Size = UDim2.new(1, -15, 0, 50)
     sliderFrame.BackgroundColor3 = GetTheme().ElementBackground
-    sliderFrame.BackgroundTransparency = Config.Transparency
     sliderFrame.BorderSizePixel = 0
     sliderFrame.Parent = parent
 
@@ -853,7 +757,6 @@ function Flint:CreateSlider(parent, text, min, max, defaultValue, callback)
     label.BackgroundTransparency = 1
     label.Text = text
     label.TextColor3 = GetTheme().TextPrimary
-    label.TextTransparency = Config.Transparency
     label.TextSize = 11
     label.Font = Enum.Font.Gotham
     label.TextXAlignment = Enum.TextXAlignment.Left
@@ -864,8 +767,7 @@ function Flint:CreateSlider(parent, text, min, max, defaultValue, callback)
     valueLabel.Position = UDim2.new(1, -55, 0, 4)
     valueLabel.BackgroundTransparency = 1
     valueLabel.Text = tostring(currentValue)
-    valueLabel.TextColor3 = GetTheme().TextSecondary
-    valueLabel.TextTransparency = Config.Transparency
+    valueLabel.TextColor3 = GetTheme().Secondary
     valueLabel.TextSize = 10
     valueLabel.Font = Enum.Font.Gotham
     valueLabel.TextXAlignment = Enum.TextXAlignment.Right
@@ -875,7 +777,6 @@ function Flint:CreateSlider(parent, text, min, max, defaultValue, callback)
     sliderBar.Size = UDim2.new(1, -24, 0, 5)
     sliderBar.Position = UDim2.new(0, 12, 0, 30)
     sliderBar.BackgroundColor3 = GetTheme().DarkElement
-    sliderBar.BackgroundTransparency = Config.Transparency
     sliderBar.BorderSizePixel = 0
     sliderBar.Parent = sliderFrame
 
@@ -886,7 +787,6 @@ function Flint:CreateSlider(parent, text, min, max, defaultValue, callback)
     local sliderFill = Instance.new("Frame")
     sliderFill.Size = UDim2.new((currentValue - min) / (max - min), 0, 1, 0)
     sliderFill.BackgroundColor3 = GetTheme().Primary
-    sliderFill.BackgroundTransparency = Config.Transparency
     sliderFill.BorderSizePixel = 0
     sliderFill.Parent = sliderBar
 
@@ -934,11 +834,11 @@ function Flint:CreateSlider(parent, text, min, max, defaultValue, callback)
         end
     end)
 
-    LibraryData.ThemeElements[sliderFrame] = {Background = "ElementBackground"}
-    LibraryData.ThemeElements[label] = {Text = "TextPrimary"}
-    LibraryData.ThemeElements[valueLabel] = {Text = "TextSecondary"}
-    LibraryData.ThemeElements[sliderBar] = {Background = "DarkElement"}
-    LibraryData.ThemeElements[sliderFill] = {Background = "Primary"}
+    LibraryData.ThemeElements[sliderFrame] = "ElementBackground"
+    LibraryData.ThemeElements[label] = "TextPrimary"
+    LibraryData.ThemeElements[valueLabel] = "TextSecondary"
+    LibraryData.ThemeElements[sliderBar] = "DarkElement"
+    LibraryData.ThemeElements[sliderFill] = "Primary"
 
     return sliderFrame
 end
@@ -947,7 +847,6 @@ function Flint:CreateKeybind(parent, text, defaultKey, callback)
     local keybindFrame = Instance.new("Frame")
     keybindFrame.Size = UDim2.new(1, -15, 0, 35)
     keybindFrame.BackgroundColor3 = GetTheme().ElementBackground
-    keybindFrame.BackgroundTransparency = Config.Transparency
     keybindFrame.BorderSizePixel = 0
     keybindFrame.Parent = parent
 
@@ -961,7 +860,6 @@ function Flint:CreateKeybind(parent, text, defaultKey, callback)
     label.BackgroundTransparency = 1
     label.Text = text
     label.TextColor3 = GetTheme().TextPrimary
-    label.TextTransparency = Config.Transparency
     label.TextSize = 11
     label.Font = Enum.Font.Gotham
     label.TextXAlignment = Enum.TextXAlignment.Left
@@ -973,11 +871,9 @@ function Flint:CreateKeybind(parent, text, defaultKey, callback)
     keybindButton.Size = UDim2.new(0, 80, 0, 25)
     keybindButton.Position = UDim2.new(1, -88, 0.5, -12.5)
     keybindButton.BackgroundColor3 = GetTheme().DarkElement
-    keybindButton.BackgroundTransparency = Config.Transparency
     keybindButton.BorderSizePixel = 0
     keybindButton.Text = currentKey.Name
-    keybindButton.TextColor3 = GetTheme().TextPrimary
-    keybindButton.TextTransparency = Config.Transparency
+    keybindButton.TextColor3 = GetTheme().Primary
     keybindButton.TextSize = 10
     keybindButton.Font = Enum.Font.Gotham
     keybindButton.Parent = keybindFrame
@@ -1003,16 +899,17 @@ function Flint:CreateKeybind(parent, text, defaultKey, callback)
             currentKey = input.KeyCode
             keybindButton.Text = input.KeyCode.Name
             keybindButton.BackgroundColor3 = GetTheme().DarkElement
-            keybindButton.TextColor3 = GetTheme().TextPrimary
+            keybindButton.TextColor3 = GetTheme().Primary
             if callback then
                 callback(input.KeyCode)
             end
         end
     end)
 
-    LibraryData.ThemeElements[keybindFrame] = {Background = "ElementBackground"}
-    LibraryData.ThemeElements[label] = {Text = "TextPrimary"}
-    LibraryData.ThemeElements[keybindButton] = {Background = "DarkElement", Text = "TextPrimary"}
+    LibraryData.ThemeElements[keybindFrame] = "ElementBackground"
+    LibraryData.ThemeElements[label] = "TextPrimary"
+    LibraryData.ThemeElements[keybindButton] = "DarkElement"
+    LibraryData.ThemeElements[keybindButton] = "TextPrimary"
 
     return keybindFrame
 end
@@ -1021,7 +918,6 @@ function Flint:CreateDropdown(parent, text, options, defaultValue, callback)
     local dropdownFrame = Instance.new("Frame")
     dropdownFrame.Size = UDim2.new(1, -15, 0, 35)
     dropdownFrame.BackgroundColor3 = GetTheme().ElementBackground
-    dropdownFrame.BackgroundTransparency = Config.Transparency
     dropdownFrame.BorderSizePixel = 0
     dropdownFrame.Parent = parent
 
@@ -1035,7 +931,6 @@ function Flint:CreateDropdown(parent, text, options, defaultValue, callback)
     label.BackgroundTransparency = 1
     label.Text = text
     label.TextColor3 = GetTheme().TextPrimary
-    label.TextTransparency = Config.Transparency
     label.TextSize = 11
     label.Font = Enum.Font.Gotham
     label.TextXAlignment = Enum.TextXAlignment.Left
@@ -1045,11 +940,9 @@ function Flint:CreateDropdown(parent, text, options, defaultValue, callback)
     dropdownButton.Size = UDim2.new(0, 100, 0, 25)
     dropdownButton.Position = UDim2.new(1, -108, 0.5, -12.5)
     dropdownButton.BackgroundColor3 = GetTheme().DarkElement
-    dropdownButton.BackgroundTransparency = Config.Transparency
     dropdownButton.BorderSizePixel = 0
     dropdownButton.Text = defaultValue or "Select"
     dropdownButton.TextColor3 = GetTheme().TextPrimary
-    dropdownButton.TextTransparency = Config.Transparency
     dropdownButton.TextSize = 10
     dropdownButton.Font = Enum.Font.Gotham
     dropdownButton.TextTruncate = Enum.TextTruncate.AtEnd
@@ -1064,11 +957,9 @@ function Flint:CreateDropdown(parent, text, options, defaultValue, callback)
     local dropdownList = Instance.new("ScrollingFrame")
     dropdownList.Size = UDim2.new(0, 100, 0, 0)
     dropdownList.BackgroundColor3 = GetTheme().ElementBackground
-    dropdownList.BackgroundTransparency = Config.Transparency
     dropdownList.BorderSizePixel = 0
     dropdownList.ScrollBarThickness = 3
     dropdownList.ScrollBarImageColor3 = GetTheme().DarkElement
-    dropdownList.ScrollBarImageTransparency = Config.Transparency
     dropdownList.CanvasSize = UDim2.new(0, 0, 0, 0)
     dropdownList.Visible = false
     dropdownList.ClipsDescendants = true
@@ -1102,11 +993,9 @@ function Flint:CreateDropdown(parent, text, options, defaultValue, callback)
             local optionButton = Instance.new("TextButton")
             optionButton.Size = UDim2.new(1, -4, 0, 25)
             optionButton.BackgroundColor3 = GetTheme().DarkElement
-            optionButton.BackgroundTransparency = Config.Transparency
             optionButton.BorderSizePixel = 0
             optionButton.Text = option
             optionButton.TextColor3 = GetTheme().TextPrimary
-            optionButton.TextTransparency = Config.Transparency
             optionButton.TextSize = 9
             optionButton.Font = Enum.Font.Gotham
             optionButton.TextTruncate = Enum.TextTruncate.AtEnd
@@ -1137,7 +1026,7 @@ function Flint:CreateDropdown(parent, text, options, defaultValue, callback)
                 optionButton.BackgroundColor3 = GetTheme().DarkElement
             end)
 
-            LibraryData.ThemeElements[optionButton] = {Background = "DarkElement", Text = "TextPrimary"}
+            LibraryData.ThemeElements[optionButton] = "DarkElement"
         end
     end
 
@@ -1158,10 +1047,11 @@ function Flint:CreateDropdown(parent, text, options, defaultValue, callback)
         end
     end)
 
-    LibraryData.ThemeElements[dropdownFrame] = {Background = "ElementBackground"}
-    LibraryData.ThemeElements[label] = {Text = "TextPrimary"}
-    LibraryData.ThemeElements[dropdownButton] = {Background = "DarkElement", Text = "TextPrimary"}
-    LibraryData.ThemeElements[dropdownList] = {Background = "ElementBackground", ScrollBar = "DarkElement"}
+    LibraryData.ThemeElements[dropdownFrame] = "ElementBackground"
+    LibraryData.ThemeElements[label] = "TextPrimary"
+    LibraryData.ThemeElements[dropdownButton] = "DarkElement"
+    LibraryData.ThemeElements[dropdownButton] = "TextPrimary"
+    LibraryData.ThemeElements[dropdownList] = "ElementBackground"
 
     return dropdownFrame
 end
@@ -1170,7 +1060,6 @@ function Flint:CreateTextBox(parent, text, defaultValue, callback)
     local textboxFrame = Instance.new("Frame")
     textboxFrame.Size = UDim2.new(1, -15, 0, 50)
     textboxFrame.BackgroundColor3 = GetTheme().ElementBackground
-    textboxFrame.BackgroundTransparency = Config.Transparency
     textboxFrame.BorderSizePixel = 0
     textboxFrame.Parent = parent
 
@@ -1186,7 +1075,6 @@ function Flint:CreateTextBox(parent, text, defaultValue, callback)
     label.BackgroundTransparency = 1
     label.Text = text
     label.TextColor3 = GetTheme().TextPrimary
-    label.TextTransparency = Config.Transparency
     label.TextSize = 11
     label.Font = Enum.Font.Gotham
     label.TextXAlignment = Enum.TextXAlignment.Left
@@ -1196,11 +1084,9 @@ function Flint:CreateTextBox(parent, text, defaultValue, callback)
     textBox.Size = UDim2.new(1, -24, 0, 22)
     textBox.Position = UDim2.new(0, 12, 0, 24)
     textBox.BackgroundColor3 = GetTheme().DarkElement
-    textBox.BackgroundTransparency = Config.Transparency
     textBox.BorderSizePixel = 0
     textBox.Text = tostring(currentValue)
-    textBox.TextColor3 = GetTheme().TextPrimary
-    textBox.TextTransparency = Config.Transparency
+    textBox.TextColor3 = GetTheme().Primary
     textBox.TextSize = 11
     textBox.Font = Enum.Font.Gotham
     textBox.ClearTextOnFocus = false
@@ -1217,9 +1103,10 @@ function Flint:CreateTextBox(parent, text, defaultValue, callback)
         end
     end)
 
-    LibraryData.ThemeElements[textboxFrame] = {Background = "ElementBackground"}
-    LibraryData.ThemeElements[label] = {Text = "TextPrimary"}
-    LibraryData.ThemeElements[textBox] = {Background = "DarkElement", Text = "TextPrimary"}
+    LibraryData.ThemeElements[textboxFrame] = "ElementBackground"
+    LibraryData.ThemeElements[label] = "TextPrimary"
+    LibraryData.ThemeElements[textBox] = "DarkElement"
+    LibraryData.ThemeElements[textBox] = "TextPrimary"
 
     return textboxFrame
 end
@@ -1228,7 +1115,6 @@ function Flint:CreateButton(parent, text, callback)
     local buttonFrame = Instance.new("Frame")
     buttonFrame.Size = UDim2.new(1, -15, 0, 35)
     buttonFrame.BackgroundColor3 = GetTheme().ElementBackground
-    buttonFrame.BackgroundTransparency = Config.Transparency
     buttonFrame.BorderSizePixel = 0
     buttonFrame.Parent = parent
 
@@ -1240,11 +1126,9 @@ function Flint:CreateButton(parent, text, callback)
     button.Size = UDim2.new(1, -24, 0, 25)
     button.Position = UDim2.new(0, 12, 0.5, -12.5)
     button.BackgroundColor3 = GetTheme().Primary
-    button.BackgroundTransparency = Config.Transparency
     button.BorderSizePixel = 0
     button.Text = text
-    button.TextColor3 = GetTheme().TextPrimary
-    button.TextTransparency = Config.Transparency
+    button.TextColor3 = GetTheme().Background
     button.TextSize = 11
     button.Font = Enum.Font.GothamBold
     button.Parent = buttonFrame
@@ -1270,8 +1154,9 @@ function Flint:CreateButton(parent, text, callback)
         TweenService:Create(button, TweenInfo.new(0.1), {BackgroundColor3 = GetTheme().Primary}):Play()
     end)
 
-    LibraryData.ThemeElements[buttonFrame] = {Background = "ElementBackground"}
-    LibraryData.ThemeElements[button] = {Background = "Primary", Text = "TextPrimary"}
+    LibraryData.ThemeElements[buttonFrame] = "ElementBackground"
+    LibraryData.ThemeElements[button] = "Primary"
+    LibraryData.ThemeElements[button] = "TextPrimary"
 
     return buttonFrame
 end
