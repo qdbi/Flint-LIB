@@ -159,6 +159,8 @@ local Config = {
     ToggleKeybind = Enum.KeyCode.RightShift
 }
 
+local LibraryData = nil
+
 local function GetTheme()
     return Themes[Config.CurrentTheme] or Themes.Default
 end
@@ -192,20 +194,22 @@ function Flint:CreateWindow(options)
     ScreenGui.Name = "FlintUI"
     ScreenGui.ResetOnSpawn = false
     ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-    
+
     if syn then
         syn.protect_gui(ScreenGui)
         ScreenGui.Parent = game:GetService("CoreGui")
     else
         ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
     end
-    
-    local LibraryData = {
+
+    LibraryData = {
         ThemeElements = {},
         ScreenGui = ScreenGui,
-        Notifications = {}
+        Notifications = {},
+        Tabs = {},
+        CurrentTab = nil
     }
-    
+
     local DropdownContainer = Instance.new("Frame")
     DropdownContainer.Name = "DropdownContainer"
     DropdownContainer.Size = UDim2.new(1, 0, 1, 0)
@@ -213,20 +217,20 @@ function Flint:CreateWindow(options)
     DropdownContainer.BackgroundTransparency = 1
     DropdownContainer.ZIndex = 100
     DropdownContainer.Parent = ScreenGui
-    
+
     local NotificationContainer = Instance.new("Frame")
     NotificationContainer.Name = "NotificationContainer"
     NotificationContainer.Size = UDim2.new(0, 200, 1, 0)
     NotificationContainer.Position = UDim2.new(1, -210, 0, 0)
     NotificationContainer.BackgroundTransparency = 1
     NotificationContainer.Parent = ScreenGui
-    
+
     local NotificationLayout = Instance.new("UIListLayout")
     NotificationLayout.SortOrder = Enum.SortOrder.LayoutOrder
     NotificationLayout.Padding = UDim.new(0, 10)
     NotificationLayout.VerticalAlignment = Enum.VerticalAlignment.Bottom
     NotificationLayout.Parent = NotificationContainer
-    
+
     local MinimizedIcon = Instance.new("Frame")
     MinimizedIcon.Name = "MinimizedIcon"
     MinimizedIcon.Size = UDim2.new(0, 50, 0, 50)
@@ -235,11 +239,11 @@ function Flint:CreateWindow(options)
     MinimizedIcon.BorderSizePixel = 0
     MinimizedIcon.Visible = false
     MinimizedIcon.Parent = ScreenGui
-    
+
     local IconCorner = Instance.new("UICorner")
     IconCorner.CornerRadius = UDim.new(0, 12)
     IconCorner.Parent = MinimizedIcon
-    
+
     local IconLabel = Instance.new("TextLabel")
     IconLabel.Size = UDim2.new(1, 0, 1, 0)
     IconLabel.BackgroundTransparency = 1
@@ -248,13 +252,13 @@ function Flint:CreateWindow(options)
     IconLabel.TextSize = 24
     IconLabel.Font = Enum.Font.GothamBold
     IconLabel.Parent = MinimizedIcon
-    
+
     local IconButton = Instance.new("TextButton")
     IconButton.Size = UDim2.new(1, 0, 1, 0)
     IconButton.BackgroundTransparency = 1
     IconButton.Text = ""
     IconButton.Parent = MinimizedIcon
-    
+
     local MainFrame = Instance.new("Frame")
     MainFrame.Name = "MainFrame"
     MainFrame.Size = size
@@ -263,11 +267,11 @@ function Flint:CreateWindow(options)
     MainFrame.BorderSizePixel = 0
     MainFrame.ClipsDescendants = true
     MainFrame.Parent = ScreenGui
-    
+
     local MainCorner = Instance.new("UICorner")
     MainCorner.CornerRadius = UDim.new(0, 12)
     MainCorner.Parent = MainFrame
-    
+
     local TopBar = Instance.new("Frame")
     TopBar.Name = "TopBar"
     TopBar.Size = UDim2.new(1, 0, 0, 35)
@@ -275,18 +279,18 @@ function Flint:CreateWindow(options)
     TopBar.BackgroundColor3 = GetTheme().SecondaryBackground
     TopBar.BorderSizePixel = 0
     TopBar.Parent = MainFrame
-    
+
     local TopBarCorner = Instance.new("UICorner")
     TopBarCorner.CornerRadius = UDim.new(0, 12)
     TopBarCorner.Parent = TopBar
-    
+
     local TopBarFill = Instance.new("Frame")
     TopBarFill.Size = UDim2.new(1, 0, 0, 12)
     TopBarFill.Position = UDim2.new(0, 0, 1, -12)
     TopBarFill.BackgroundColor3 = GetTheme().SecondaryBackground
     TopBarFill.BorderSizePixel = 0
     TopBarFill.Parent = TopBar
-    
+
     local TopBarTitle = Instance.new("TextLabel")
     TopBarTitle.Size = UDim2.new(1, -100, 1, 0)
     TopBarTitle.Position = UDim2.new(0, 15, 0, 0)
@@ -297,7 +301,7 @@ function Flint:CreateWindow(options)
     TopBarTitle.Font = Enum.Font.GothamBold
     TopBarTitle.TextXAlignment = Enum.TextXAlignment.Left
     TopBarTitle.Parent = TopBar
-    
+
     local MinimizeButton = Instance.new("TextButton")
     MinimizeButton.Size = UDim2.new(0, 30, 0, 25)
     MinimizeButton.Position = UDim2.new(1, -40, 0, 5)
@@ -308,11 +312,11 @@ function Flint:CreateWindow(options)
     MinimizeButton.TextSize = 16
     MinimizeButton.Font = Enum.Font.GothamBold
     MinimizeButton.Parent = TopBar
-    
+
     local MinimizeCorner = Instance.new("UICorner")
     MinimizeCorner.CornerRadius = UDim.new(0, 6)
     MinimizeCorner.Parent = MinimizeButton
-    
+
     local Sidebar = Instance.new("Frame")
     Sidebar.Name = "Sidebar"
     Sidebar.Size = UDim2.new(0, 150, 1, -35)
@@ -320,7 +324,7 @@ function Flint:CreateWindow(options)
     Sidebar.BackgroundColor3 = GetTheme().SecondaryBackground
     Sidebar.BorderSizePixel = 0
     Sidebar.Parent = MainFrame
-    
+
     local SidebarTitle = Instance.new("TextLabel")
     SidebarTitle.Name = "Title"
     SidebarTitle.Size = UDim2.new(1, -20, 0, 45)
@@ -332,22 +336,20 @@ function Flint:CreateWindow(options)
     SidebarTitle.Font = Enum.Font.GothamBold
     SidebarTitle.TextXAlignment = Enum.TextXAlignment.Left
     SidebarTitle.Parent = Sidebar
-    
+
     local ContentFrame = Instance.new("Frame")
     ContentFrame.Name = "ContentFrame"
     ContentFrame.Size = UDim2.new(1, -165, 1, -50)
     ContentFrame.Position = UDim2.new(0, 158, 0, 43)
     ContentFrame.BackgroundTransparency = 1
     ContentFrame.Parent = MainFrame
-    
+
     LibraryData.MainFrame = MainFrame
     LibraryData.Sidebar = Sidebar
     LibraryData.ContentFrame = ContentFrame
     LibraryData.DropdownContainer = DropdownContainer
     LibraryData.MinimizedIcon = MinimizedIcon
-    LibraryData.Tabs = {}
-    LibraryData.CurrentTab = nil
-    
+
     LibraryData.ThemeElements[MainFrame] = "Background"
     LibraryData.ThemeElements[TopBar] = "SecondaryBackground"
     LibraryData.ThemeElements[TopBarFill] = "SecondaryBackground"
@@ -358,7 +360,7 @@ function Flint:CreateWindow(options)
     LibraryData.ThemeElements[SidebarTitle] = "TextPrimary"
     LibraryData.ThemeElements[MinimizedIcon] = "Background"
     LibraryData.ThemeElements[IconLabel] = "TextPrimary"
-    
+
     local function ToggleGUI()
         Config.GUIVisible = not Config.GUIVisible
         if Config.GUIVisible then
@@ -375,30 +377,30 @@ function Flint:CreateWindow(options)
             end)
         end
     end
-    
+
     MinimizeButton.MouseButton1Click:Connect(ToggleGUI)
     IconButton.MouseButton1Click:Connect(ToggleGUI)
-    
+
     UserInputService.InputBegan:Connect(function(input, gameProcessed)
         if not gameProcessed and input.KeyCode == Config.ToggleKeybind then
             ToggleGUI()
         end
     end)
-    
+
     local dragging, dragInput, dragStart, startPos
-    
+
     local function update(input)
         local delta = input.Position - dragStart
         local targetPos = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
         TweenService:Create(MainFrame, TweenInfo.new(Config.DragSmoothing, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Position = targetPos}):Play()
     end
-    
+
     TopBar.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             dragging = true
             dragStart = input.Position
             startPos = MainFrame.Position
-            
+
             input.Changed:Connect(function()
                 if input.UserInputState == Enum.UserInputState.End then
                     dragging = false
@@ -406,33 +408,33 @@ function Flint:CreateWindow(options)
             end)
         end
     end)
-    
+
     TopBar.InputChanged:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
             dragInput = input
         end
     end)
-    
+
     UserInputService.InputChanged:Connect(function(input)
         if input == dragInput and dragging then
             update(input)
         end
     end)
-    
+
     local iconDragging, iconDragInput, iconDragStart, iconStartPos
-    
+
     local function updateIcon(input)
         local delta = input.Position - iconDragStart
         local targetPos = UDim2.new(iconStartPos.X.Scale, iconStartPos.X.Offset + delta.X, iconStartPos.Y.Scale, iconStartPos.Y.Offset + delta.Y)
         TweenService:Create(MinimizedIcon, TweenInfo.new(Config.DragSmoothing, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Position = targetPos}):Play()
     end
-    
+
     MinimizedIcon.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             iconDragging = true
             iconDragStart = input.Position
             iconStartPos = MinimizedIcon.Position
-            
+
             input.Changed:Connect(function()
                 if input.UserInputState == Enum.UserInputState.End then
                     iconDragging = false
@@ -440,19 +442,19 @@ function Flint:CreateWindow(options)
             end)
         end
     end)
-    
+
     MinimizedIcon.InputChanged:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
             iconDragInput = input
         end
     end)
-    
+
     UserInputService.InputChanged:Connect(function(input)
         if input == iconDragInput and iconDragging then
             updateIcon(input)
         end
     end)
-    
+
     return LibraryData
 end
 
@@ -461,19 +463,20 @@ function Flint:Init()
 end
 
 function Flint:Notify(message)
-    local NotificationContainer = self.ScreenGui:FindFirstChild("NotificationContainer")
+    if not LibraryData or not LibraryData.ScreenGui then return end
+    local NotificationContainer = LibraryData.ScreenGui:FindFirstChild("NotificationContainer")
     if not NotificationContainer then return end
-    
+
     local notification = Instance.new("Frame")
     notification.Size = UDim2.new(0, 190, 0, 50)
     notification.BackgroundColor3 = GetTheme().ElementBackground
     notification.BorderSizePixel = 0
     notification.Parent = NotificationContainer
-    
+
     local notificationCorner = Instance.new("UICorner")
     notificationCorner.CornerRadius = UDim.new(0, 8)
     notificationCorner.Parent = notification
-    
+
     local notificationLabel = Instance.new("TextLabel")
     notificationLabel.Size = UDim2.new(1, -10, 1, -10)
     notificationLabel.Position = UDim2.new(0, 5, 0, 5)
@@ -486,13 +489,13 @@ function Flint:Notify(message)
     notificationLabel.TextXAlignment = Enum.TextXAlignment.Left
     notificationLabel.TextYAlignment = Enum.TextYAlignment.Top
     notificationLabel.Parent = notification
-    
-    self.ThemeElements[notification] = "ElementBackground"
-    self.ThemeElements[notificationLabel] = "TextPrimary"
-    
+
+    LibraryData.ThemeElements[notification] = "ElementBackground"
+    LibraryData.ThemeElements[notificationLabel] = "TextPrimary"
+
     local tweenIn = TweenService:Create(notification, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Position = UDim2.new(0, 0, 0, 0)})
     tweenIn:Play()
-    
+
     task.spawn(function()
         task.wait(3)
         local tweenOut = TweenService:Create(notification, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Position = UDim2.new(0, 200, 0, 0)})
@@ -513,7 +516,7 @@ function Flint:CreateTab(libData, name, icon, autoSelect)
         yOffset = 55 + ((#libData.Tabs - (libData.Tabs.Settings and 1 or 0)) * 40)
         icon = icon or tostring(tabCount)
     end
-    
+
     local tabButton = Instance.new("TextButton")
     tabButton.Name = name .. "Button"
     tabButton.Size = UDim2.new(1, -20, 0, 35)
@@ -523,11 +526,11 @@ function Flint:CreateTab(libData, name, icon, autoSelect)
     tabButton.Text = ""
     tabButton.AutoButtonColor = false
     tabButton.Parent = libData.Sidebar
-    
+
     local buttonCorner = Instance.new("UICorner")
     buttonCorner.CornerRadius = UDim.new(0, 8)
     buttonCorner.Parent = tabButton
-    
+
     local buttonLabel = Instance.new("TextLabel")
     buttonLabel.Size = UDim2.new(1, -35, 1, 0)
     buttonLabel.Position = UDim2.new(0, 30, 0, 0)
@@ -538,7 +541,7 @@ function Flint:CreateTab(libData, name, icon, autoSelect)
     buttonLabel.Font = Enum.Font.Gotham
     buttonLabel.TextXAlignment = Enum.TextXAlignment.Left
     buttonLabel.Parent = tabButton
-    
+
     local iconLabel = Instance.new("TextLabel")
     iconLabel.Size = UDim2.new(0, 18, 0, 18)
     iconLabel.Position = UDim2.new(0, 8, 0.5, -9)
@@ -548,7 +551,7 @@ function Flint:CreateTab(libData, name, icon, autoSelect)
     iconLabel.TextSize = 14
     iconLabel.Font = Enum.Font.GothamBold
     iconLabel.Parent = tabButton
-    
+
     local tabContent = Instance.new("ScrollingFrame")
     tabContent.Name = name .. "Content"
     tabContent.Size = UDim2.new(1, 0, 1, 0)
@@ -560,21 +563,21 @@ function Flint:CreateTab(libData, name, icon, autoSelect)
     tabContent.CanvasSize = UDim2.new(0, 0, 0, 0)
     tabContent.Visible = false
     tabContent.Parent = libData.ContentFrame
-    
+
     local layout = Instance.new("UIListLayout")
     layout.SortOrder = Enum.SortOrder.LayoutOrder
     layout.Padding = UDim.new(0, 8)
     layout.Parent = tabContent
-    
+
     layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
         tabContent.CanvasSize = UDim2.new(0, 0, 0, layout.AbsoluteContentSize.Y + 15)
     end)
-    
+
     libData.ThemeElements[tabButton] = "ElementBackground"
     libData.ThemeElements[buttonLabel] = "TextSecondary"
     libData.ThemeElements[iconLabel] = "TextSecondary"
     libData.ThemeElements[tabContent] = "DarkElement"
-    
+
     local tabData = {
         Name = name,
         Button = tabButton,
@@ -583,16 +586,16 @@ function Flint:CreateTab(libData, name, icon, autoSelect)
         Content = tabContent,
         Elements = {}
     }
-    
+
     if name == "Settings" then
         libData.Tabs.Settings = tabData
     else
         table.insert(libData.Tabs, tabData)
     end
-    
+
     local function SwitchTab()
         if libData.CurrentTab == tabData then return end
-        
+
         for _, tab in pairs(libData.Tabs) do
             tab.Content.Visible = false
             tab.Button.BackgroundColor3 = GetTheme().ElementBackground
@@ -605,46 +608,46 @@ function Flint:CreateTab(libData, name, icon, autoSelect)
             libData.Tabs.Settings.Label.TextColor3 = GetTheme().TextSecondary
             libData.Tabs.Settings.Icon.TextColor3 = GetTheme().TextSecondary
         end
-        
+
         tabContent.Visible = true
         tabButton.BackgroundColor3 = GetTheme().Primary
         buttonLabel.TextColor3 = GetTheme().Background
         iconLabel.TextColor3 = GetTheme().Background
         libData.CurrentTab = tabData
     end
-    
+
     tabButton.MouseButton1Click:Connect(SwitchTab)
-    
+
     if autoSelect or #libData.Tabs == 1 then
         SwitchTab()
     end
-    
+
     if name == "Settings" then
         local settingsTab = tabContent
         Flint:CreateSection(settingsTab, "UI SETTINGS")
-        
+
         Flint:CreateSlider(settingsTab, "Drag Smoothing", 1, 100, math.floor(Config.DragSmoothing * 100), function(value)
             Config.DragSmoothing = value / 100
         end)
-        
+
         Flint:CreateKeybind(settingsTab, "Toggle GUI Keybind", Config.ToggleKeybind, function(newKey)
             Config.ToggleKeybind = newKey
         end)
-        
+
         Flint:CreateSection(settingsTab, "THEME SETTINGS")
-        
+
         local themeNames = {}
         for themeName, _ in pairs(Themes) do
             table.insert(themeNames, themeName)
         end
         table.sort(themeNames)
-        
+
         Flint:CreateDropdown(settingsTab, "Select Theme", themeNames, Config.CurrentTheme, function(selected)
             Config.CurrentTheme = selected
             ApplyTheme(libData.ThemeElements)
         end)
     end
-    
+
     return tabContent
 end
 
@@ -653,7 +656,7 @@ function Flint:CreateSection(parent, text)
     section.Size = UDim2.new(1, -15, 0, 25)
     section.BackgroundTransparency = 1
     section.Parent = parent
-    
+
     local sectionLabel = Instance.new("TextLabel")
     sectionLabel.Size = UDim2.new(1, 0, 1, 0)
     sectionLabel.BackgroundTransparency = 1
@@ -663,10 +666,9 @@ function Flint:CreateSection(parent, text)
     sectionLabel.Font = Enum.Font.GothamBold
     sectionLabel.TextXAlignment = Enum.TextXAlignment.Left
     sectionLabel.Parent = section
-    
-    local screenGui = parent:FindFirstAncestorOfClass("ScreenGui")
-    screenGui.FlintUI.LibraryData.ThemeElements[sectionLabel] = "TextPrimary"
-    
+
+    LibraryData.ThemeElements[sectionLabel] = "TextPrimary"
+
     return section
 end
 
@@ -676,11 +678,11 @@ function Flint:CreateToggle(parent, text, defaultValue, callback)
     toggleFrame.BackgroundColor3 = GetTheme().ElementBackground
     toggleFrame.BorderSizePixel = 0
     toggleFrame.Parent = parent
-    
+
     local toggleCorner = Instance.new("UICorner")
     toggleCorner.CornerRadius = UDim.new(0, 8)
     toggleCorner.Parent = toggleFrame
-    
+
     local label = Instance.new("TextLabel")
     label.Size = UDim2.new(1, -50, 1, 0)
     label.Position = UDim2.new(0, 12, 0, 0)
@@ -691,9 +693,9 @@ function Flint:CreateToggle(parent, text, defaultValue, callback)
     label.Font = Enum.Font.Gotham
     label.TextXAlignment = Enum.TextXAlignment.Left
     label.Parent = toggleFrame
-    
+
     local toggled = defaultValue or false
-    
+
     local toggleButton = Instance.new("TextButton")
     toggleButton.Size = UDim2.new(0, 35, 0, 18)
     toggleButton.Position = UDim2.new(1, -42, 0.5, -9)
@@ -701,22 +703,22 @@ function Flint:CreateToggle(parent, text, defaultValue, callback)
     toggleButton.Text = ""
     toggleButton.AutoButtonColor = false
     toggleButton.Parent = toggleFrame
-    
+
     local toggleButtonCorner = Instance.new("UICorner")
     toggleButtonCorner.CornerRadius = UDim.new(1, 0)
     toggleButtonCorner.Parent = toggleButton
-    
+
     local toggleCircle = Instance.new("Frame")
     toggleCircle.Size = UDim2.new(0, 14, 0, 14)
     toggleCircle.Position = toggled and UDim2.new(1, -16, 0.5, -7) or UDim2.new(0, 2, 0.5, -7)
     toggleCircle.BackgroundColor3 = GetTheme().Background
     toggleCircle.BorderSizePixel = 0
     toggleCircle.Parent = toggleButton
-    
+
     local circleCorner = Instance.new("UICorner")
     circleCorner.CornerRadius = UDim.new(1, 0)
     circleCorner.Parent = toggleCircle
-    
+
     toggleButton.MouseButton1Click:Connect(function()
         toggled = not toggled
         local colorTween = TweenService:Create(toggleButton, TweenInfo.new(0.2), {BackgroundColor3 = toggled and GetTheme().Primary or GetTheme().DarkElement})
@@ -727,13 +729,12 @@ function Flint:CreateToggle(parent, text, defaultValue, callback)
             callback(toggled)
         end
     end)
-    
-    local screenGui = parent:FindFirstAncestorOfClass("ScreenGui")
-    screenGui.FlintUI.LibraryData.ThemeElements[toggleFrame] = "ElementBackground"
-    screenGui.FlintUI.LibraryData.ThemeElements[label] = "TextPrimary"
-    screenGui.FlintUI.LibraryData.ThemeElements[toggleButton] = toggled and "Primary" or "DarkElement"
-    screenGui.FlintUI.LibraryData.ThemeElements[toggleCircle] = "Background"
-    
+
+    LibraryData.ThemeElements[toggleFrame] = "ElementBackground"
+    LibraryData.ThemeElements[label] = "TextPrimary"
+    LibraryData.ThemeElements[toggleButton] = toggled and "Primary" or "DarkElement"
+    LibraryData.ThemeElements[toggleCircle] = "Background"
+
     return toggleFrame
 end
 
@@ -743,13 +744,13 @@ function Flint:CreateSlider(parent, text, min, max, defaultValue, callback)
     sliderFrame.BackgroundColor3 = GetTheme().ElementBackground
     sliderFrame.BorderSizePixel = 0
     sliderFrame.Parent = parent
-    
+
     local sliderCorner = Instance.new("UICorner")
     sliderCorner.CornerRadius = UDim.new(0, 8)
     sliderCorner.Parent = sliderFrame
-    
+
     local currentValue = defaultValue or min
-    
+
     local label = Instance.new("TextLabel")
     label.Size = UDim2.new(1, -25, 0, 18)
     label.Position = UDim2.new(0, 12, 0, 4)
@@ -760,7 +761,7 @@ function Flint:CreateSlider(parent, text, min, max, defaultValue, callback)
     label.Font = Enum.Font.Gotham
     label.TextXAlignment = Enum.TextXAlignment.Left
     label.Parent = sliderFrame
-    
+
     local valueLabel = Instance.new("TextLabel")
     valueLabel.Size = UDim2.new(0, 45, 0, 18)
     valueLabel.Position = UDim2.new(1, -55, 0, 4)
@@ -771,37 +772,37 @@ function Flint:CreateSlider(parent, text, min, max, defaultValue, callback)
     valueLabel.Font = Enum.Font.Gotham
     valueLabel.TextXAlignment = Enum.TextXAlignment.Right
     valueLabel.Parent = sliderFrame
-    
+
     local sliderBar = Instance.new("Frame")
     sliderBar.Size = UDim2.new(1, -24, 0, 5)
     sliderBar.Position = UDim2.new(0, 12, 0, 30)
     sliderBar.BackgroundColor3 = GetTheme().DarkElement
     sliderBar.BorderSizePixel = 0
     sliderBar.Parent = sliderFrame
-    
+
     local barCorner = Instance.new("UICorner")
     barCorner.CornerRadius = UDim.new(1, 0)
     barCorner.Parent = sliderBar
-    
+
     local sliderFill = Instance.new("Frame")
     sliderFill.Size = UDim2.new((currentValue - min) / (max - min), 0, 1, 0)
     sliderFill.BackgroundColor3 = GetTheme().Primary
     sliderFill.BorderSizePixel = 0
     sliderFill.Parent = sliderBar
-    
+
     local fillCorner = Instance.new("UICorner")
     fillCorner.CornerRadius = UDim.new(1, 0)
     fillCorner.Parent = sliderFill
-    
+
     local sliderButton = Instance.new("TextButton")
     sliderButton.Size = UDim2.new(1, 0, 1, 20)
     sliderButton.Position = UDim2.new(0, 0, 0, -10)
     sliderButton.BackgroundTransparency = 1
     sliderButton.Text = ""
     sliderButton.Parent = sliderBar
-    
+
     local draggingSlider = false
-    
+
     local function updateSlider(input)
         local percent = math.clamp((input.Position.X - sliderBar.AbsolutePosition.X) / sliderBar.AbsoluteSize.X, 0, 1)
         local value = math.floor(min + (max - min) * percent)
@@ -812,34 +813,33 @@ function Flint:CreateSlider(parent, text, min, max, defaultValue, callback)
             callback(value)
         end
     end
-    
+
     sliderButton.MouseButton1Down:Connect(function()
         draggingSlider = true
     end)
-    
+
     sliderButton.TouchTap:Connect(function(touchPositions)
         updateSlider({Position = touchPositions[1]})
     end)
-    
+
     UserInputService.InputChanged:Connect(function(input)
         if draggingSlider and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
             updateSlider(input)
         end
     end)
-    
+
     UserInputService.InputEnded:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             draggingSlider = false
         end
     end)
-    
-    local screenGui = parent:FindFirstAncestorOfClass("ScreenGui")
-    screenGui.FlintUI.LibraryData.ThemeElements[sliderFrame] = "ElementBackground"
-    screenGui.FlintUI.LibraryData.ThemeElements[label] = "TextPrimary"
-    screenGui.FlintUI.LibraryData.ThemeElements[valueLabel] = "TextSecondary"
-    screenGui.FlintUI.LibraryData.ThemeElements[sliderBar] = "DarkElement"
-    screenGui.FlintUI.LibraryData.ThemeElements[sliderFill] = "Primary"
-    
+
+    LibraryData.ThemeElements[sliderFrame] = "ElementBackground"
+    LibraryData.ThemeElements[label] = "TextPrimary"
+    LibraryData.ThemeElements[valueLabel] = "TextSecondary"
+    LibraryData.ThemeElements[sliderBar] = "DarkElement"
+    LibraryData.ThemeElements[sliderFill] = "Primary"
+
     return sliderFrame
 end
 
@@ -849,11 +849,11 @@ function Flint:CreateKeybind(parent, text, defaultKey, callback)
     keybindFrame.BackgroundColor3 = GetTheme().ElementBackground
     keybindFrame.BorderSizePixel = 0
     keybindFrame.Parent = parent
-    
+
     local keybindCorner = Instance.new("UICorner")
     keybindCorner.CornerRadius = UDim.new(0, 8)
     keybindCorner.Parent = keybindFrame
-    
+
     local label = Instance.new("TextLabel")
     label.Size = UDim2.new(1, -100, 1, 0)
     label.Position = UDim2.new(0, 12, 0, 0)
@@ -864,9 +864,9 @@ function Flint:CreateKeybind(parent, text, defaultKey, callback)
     label.Font = Enum.Font.Gotham
     label.TextXAlignment = Enum.TextXAlignment.Left
     label.Parent = keybindFrame
-    
+
     local currentKey = defaultKey or Enum.KeyCode.Unknown
-    
+
     local keybindButton = Instance.new("TextButton")
     keybindButton.Size = UDim2.new(0, 80, 0, 25)
     keybindButton.Position = UDim2.new(1, -88, 0.5, -12.5)
@@ -877,13 +877,13 @@ function Flint:CreateKeybind(parent, text, defaultKey, callback)
     keybindButton.TextSize = 10
     keybindButton.Font = Enum.Font.Gotham
     keybindButton.Parent = keybindFrame
-    
+
     local keybindButtonCorner = Instance.new("UICorner")
     keybindButtonCorner.CornerRadius = UDim.new(0, 6)
     keybindButtonCorner.Parent = keybindButton
-    
+
     local listening = false
-    
+
     keybindButton.MouseButton1Click:Connect(function()
         if not listening then
             listening = true
@@ -892,7 +892,7 @@ function Flint:CreateKeybind(parent, text, defaultKey, callback)
             keybindButton.TextColor3 = GetTheme().Background
         end
     end)
-    
+
     UserInputService.InputBegan:Connect(function(input, gameProcessed)
         if listening and input.UserInputType == Enum.UserInputType.Keyboard then
             listening = false
@@ -905,13 +905,12 @@ function Flint:CreateKeybind(parent, text, defaultKey, callback)
             end
         end
     end)
-    
-    local screenGui = parent:FindFirstAncestorOfClass("ScreenGui")
-    screenGui.FlintUI.LibraryData.ThemeElements[keybindFrame] = "ElementBackground"
-    screenGui.FlintUI.LibraryData.ThemeElements[label] = "TextPrimary"
-    screenGui.FlintUI.LibraryData.ThemeElements[keybindButton] = "DarkElement"
-    screenGui.FlintUI.LibraryData.ThemeElements[keybindButton] = "TextPrimary"
-    
+
+    LibraryData.ThemeElements[keybindFrame] = "ElementBackground"
+    LibraryData.ThemeElements[label] = "TextPrimary"
+    LibraryData.ThemeElements[keybindButton] = "DarkElement"
+    LibraryData.ThemeElements[keybindButton] = "TextPrimary"
+
     return keybindFrame
 end
 
@@ -921,11 +920,11 @@ function Flint:CreateDropdown(parent, text, options, defaultValue, callback)
     dropdownFrame.BackgroundColor3 = GetTheme().ElementBackground
     dropdownFrame.BorderSizePixel = 0
     dropdownFrame.Parent = parent
-    
+
     local dropdownCorner = Instance.new("UICorner")
     dropdownCorner.CornerRadius = UDim.new(0, 8)
     dropdownCorner.Parent = dropdownFrame
-    
+
     local label = Instance.new("TextLabel")
     label.Size = UDim2.new(1, -120, 1, 0)
     label.Position = UDim2.new(0, 12, 0, 0)
@@ -936,7 +935,7 @@ function Flint:CreateDropdown(parent, text, options, defaultValue, callback)
     label.Font = Enum.Font.Gotham
     label.TextXAlignment = Enum.TextXAlignment.Left
     label.Parent = dropdownFrame
-    
+
     local dropdownButton = Instance.new("TextButton")
     dropdownButton.Size = UDim2.new(0, 100, 0, 25)
     dropdownButton.Position = UDim2.new(1, -108, 0.5, -12.5)
@@ -948,13 +947,13 @@ function Flint:CreateDropdown(parent, text, options, defaultValue, callback)
     dropdownButton.Font = Enum.Font.Gotham
     dropdownButton.TextTruncate = Enum.TextTruncate.AtEnd
     dropdownButton.Parent = dropdownFrame
-    
+
     local dropdownButtonCorner = Instance.new("UICorner")
     dropdownButtonCorner.CornerRadius = UDim.new(0, 6)
     dropdownButtonCorner.Parent = dropdownButton
-    
-    local dropdownContainer = parent:FindFirstAncestorOfClass("ScreenGui"):FindFirstChild("DropdownContainer")
-    
+
+    local dropdownContainer = LibraryData.DropdownContainer
+
     local dropdownList = Instance.new("ScrollingFrame")
     dropdownList.Size = UDim2.new(0, 100, 0, 0)
     dropdownList.BackgroundColor3 = GetTheme().ElementBackground
@@ -966,30 +965,30 @@ function Flint:CreateDropdown(parent, text, options, defaultValue, callback)
     dropdownList.ClipsDescendants = true
     dropdownList.ZIndex = 1000
     dropdownList.Parent = dropdownContainer
-    
+
     local listCorner = Instance.new("UICorner")
     listCorner.CornerRadius = UDim.new(0, 6)
     listCorner.Parent = dropdownList
-    
+
     local listLayout = Instance.new("UIListLayout")
     listLayout.SortOrder = Enum.SortOrder.Name
     listLayout.Padding = UDim.new(0, 2)
     listLayout.Parent = dropdownList
-    
+
     listLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
         dropdownList.CanvasSize = UDim2.new(0, 0, 0, listLayout.AbsoluteContentSize.Y + 4)
     end)
-    
+
     local isOpen = false
     local selectedValue = defaultValue
-    
+
     local function updateOptions()
         for _, child in pairs(dropdownList:GetChildren()) do
             if child:IsA("TextButton") then
                 child:Destroy()
             end
         end
-        
+
         for _, option in pairs(options) do
             local optionButton = Instance.new("TextButton")
             optionButton.Size = UDim2.new(1, -4, 0, 25)
@@ -1002,11 +1001,11 @@ function Flint:CreateDropdown(parent, text, options, defaultValue, callback)
             optionButton.TextTruncate = Enum.TextTruncate.AtEnd
             optionButton.ZIndex = 1001
             optionButton.Parent = dropdownList
-            
+
             local optionCorner = Instance.new("UICorner")
             optionCorner.CornerRadius = UDim.new(0, 4)
             optionCorner.Parent = optionButton
-            
+
             optionButton.MouseButton1Click:Connect(function()
                 selectedValue = option
                 dropdownButton.Text = option
@@ -1018,20 +1017,19 @@ function Flint:CreateDropdown(parent, text, options, defaultValue, callback)
                     callback(option)
                 end
             end)
-            
+
             optionButton.MouseEnter:Connect(function()
                 optionButton.BackgroundColor3 = GetTheme().Hover
             end)
-            
+
             optionButton.MouseLeave:Connect(function()
                 optionButton.BackgroundColor3 = GetTheme().DarkElement
             end)
-            
-            local screenGui = parent:FindFirstAncestorOfClass("ScreenGui")
-            screenGui.FlintUI.LibraryData.ThemeElements[optionButton] = "DarkElement"
+
+            LibraryData.ThemeElements[optionButton] = "DarkElement"
         end
     end
-    
+
     dropdownButton.MouseButton1Click:Connect(function()
         isOpen = not isOpen
         if isOpen then
@@ -1048,14 +1046,13 @@ function Flint:CreateDropdown(parent, text, options, defaultValue, callback)
             dropdownList.Visible = false
         end
     end)
-    
-    local screenGui = parent:FindFirstAncestorOfClass("ScreenGui")
-    screenGui.FlintUI.LibraryData.ThemeElements[dropdownFrame] = "ElementBackground"
-    screenGui.FlintUI.LibraryData.ThemeElements[label] = "TextPrimary"
-    screenGui.FlintUI.LibraryData.ThemeElements[dropdownButton] = "DarkElement"
-    screenGui.FlintUI.LibraryData.ThemeElements[dropdownButton] = "TextPrimary"
-    screenGui.FlintUI.LibraryData.ThemeElements[dropdownList] = "ElementBackground"
-    
+
+    LibraryData.ThemeElements[dropdownFrame] = "ElementBackground"
+    LibraryData.ThemeElements[label] = "TextPrimary"
+    LibraryData.ThemeElements[dropdownButton] = "DarkElement"
+    LibraryData.ThemeElements[dropdownButton] = "TextPrimary"
+    LibraryData.ThemeElements[dropdownList] = "ElementBackground"
+
     return dropdownFrame
 end
 
@@ -1065,13 +1062,13 @@ function Flint:CreateTextBox(parent, text, defaultValue, callback)
     textboxFrame.BackgroundColor3 = GetTheme().ElementBackground
     textboxFrame.BorderSizePixel = 0
     textboxFrame.Parent = parent
-    
+
     local textboxCorner = Instance.new("UICorner")
     textboxCorner.CornerRadius = UDim.new(0, 8)
     textboxCorner.Parent = textboxFrame
-    
+
     local currentValue = defaultValue or ""
-    
+
     local label = Instance.new("TextLabel")
     label.Size = UDim2.new(1, -25, 0, 18)
     label.Position = UDim2.new(0, 12, 0, 4)
@@ -1082,7 +1079,7 @@ function Flint:CreateTextBox(parent, text, defaultValue, callback)
     label.Font = Enum.Font.Gotham
     label.TextXAlignment = Enum.TextXAlignment.Left
     label.Parent = textboxFrame
-    
+
     local textBox = Instance.new("TextBox")
     textBox.Size = UDim2.new(1, -24, 0, 22)
     textBox.Position = UDim2.new(0, 12, 0, 24)
@@ -1094,24 +1091,23 @@ function Flint:CreateTextBox(parent, text, defaultValue, callback)
     textBox.Font = Enum.Font.Gotham
     textBox.ClearTextOnFocus = false
     textBox.Parent = textboxFrame
-    
+
     local boxCorner = Instance.new("UICorner")
     boxCorner.CornerRadius = UDim.new(0, 6)
     boxCorner.Parent = textBox
-    
+
     textBox.FocusLost:Connect(function()
         currentValue = textBox.Text
         if callback then
             callback(textBox.Text)
         end
     end)
-    
-    local screenGui = parent:FindFirstAncestorOfClass("ScreenGui")
-    screenGui.FlintUI.LibraryData.ThemeElements[textboxFrame] = "ElementBackground"
-    screenGui.FlintUI.LibraryData.ThemeElements[label] = "TextPrimary"
-    screenGui.FlintUI.LibraryData.ThemeElements[textBox] = "DarkElement"
-    screenGui.FlintUI.LibraryData.ThemeElements[textBox] = "TextPrimary"
-    
+
+    LibraryData.ThemeElements[textboxFrame] = "ElementBackground"
+    LibraryData.ThemeElements[label] = "TextPrimary"
+    LibraryData.ThemeElements[textBox] = "DarkElement"
+    LibraryData.ThemeElements[textBox] = "TextPrimary"
+
     return textboxFrame
 end
 
@@ -1121,11 +1117,11 @@ function Flint:CreateButton(parent, text, callback)
     buttonFrame.BackgroundColor3 = GetTheme().ElementBackground
     buttonFrame.BorderSizePixel = 0
     buttonFrame.Parent = parent
-    
+
     local buttonFrameCorner = Instance.new("UICorner")
     buttonFrameCorner.CornerRadius = UDim.new(0, 8)
     buttonFrameCorner.Parent = buttonFrame
-    
+
     local button = Instance.new("TextButton")
     button.Size = UDim2.new(1, -24, 0, 25)
     button.Position = UDim2.new(0, 12, 0.5, -12.5)
@@ -1136,11 +1132,11 @@ function Flint:CreateButton(parent, text, callback)
     button.TextSize = 11
     button.Font = Enum.Font.GothamBold
     button.Parent = buttonFrame
-    
+
     local buttonCorner = Instance.new("UICorner")
     buttonCorner.CornerRadius = UDim.new(0, 6)
     buttonCorner.Parent = button
-    
+
     button.MouseButton1Click:Connect(function()
         TweenService:Create(button, TweenInfo.new(0.1), {BackgroundColor3 = GetTheme().DarkElement}):Play()
         task.wait(0.1)
@@ -1149,24 +1145,20 @@ function Flint:CreateButton(parent, text, callback)
             callback()
         end
     end)
-    
+
     button.MouseEnter:Connect(function()
         TweenService:Create(button, TweenInfo.new(0.1), {BackgroundColor3 = GetTheme().Secondary}):Play()
     end)
-    
+
     button.MouseLeave:Connect(function()
         TweenService:Create(button, TweenInfo.new(0.1), {BackgroundColor3 = GetTheme().Primary}):Play()
     end)
-    
-    local screenGui = parent:FindFirstAncestorOfClass("ScreenGui")
-    screenGui.FlintUI.LibraryData.ThemeElements[buttonFrame] = "ElementBackground"
-    screenGui.FlintUI.LibraryData.ThemeElements[button] = "Primary"
-    screenGui.FlintUI.LibraryData.ThemeElements[button] = "TextPrimary"
-    
+
+    LibraryData.ThemeElements[buttonFrame] = "ElementBackground"
+    LibraryData.ThemeElements[button] = "Primary"
+    LibraryData.ThemeElements[button] = "TextPrimary"
+
     return buttonFrame
 end
-
-print("Flint UI Library v3.0 loaded successfully!")
-print("Press " .. Config.ToggleKeybind.Name .. " to toggle GUI visibility")
 
 return Flint
