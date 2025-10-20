@@ -206,3 +206,5 @@ Flint:CreateWindow({
 - **Maintenance**: Check the hosted library URL regularly for updates or host your own version to ensure reliability.
 
 For issues or feature requests, refer to the library’s source repository or contact the developer.
+
+ - @ly.arv on discord.
