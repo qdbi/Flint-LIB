@@ -248,7 +248,8 @@ function Flint:CreateWindow(options)
         CurrentTab = nil,
         SettingsOpen = false,
         UIScaleInstance = nil,
-        OriginalSize = size
+        OriginalSize = size,
+        TabCount = 0
     }
 
     local DropdownContainer = Instance.new("Frame")
@@ -301,7 +302,7 @@ function Flint:CreateWindow(options)
     local UIScale = Instance.new("UIScale")
     UIScale.Scale = Config.UIScale
     UIScale.Parent = MainFrame
-    
+
     LibraryData.UIScaleInstance = UIScale
 
     local MainCorner = Instance.new("UICorner")
@@ -371,28 +372,33 @@ function Flint:CreateWindow(options)
 
     local TabBar = Instance.new("ScrollingFrame")
     TabBar.Name = "TabBar"
-    TabBar.Size = UDim2.new(1, 0, 0, 45)
-    TabBar.Position = UDim2.new(0, 0, 0, 35)
+    TabBar.Size = Config.TabLayout == "Horizontal" and UDim2.new(1, 0, 0, 45) or UDim2.new(0, 150, 1, -35)
+    TabBar.Position = Config.TabLayout == "Horizontal" and UDim2.new(0, 0, 0, 35) or UDim2.new(0, 0, 0, 35)
     TabBar.BackgroundColor3 = GetTheme().SecondaryBackground
     TabBar.BorderSizePixel = 0
     TabBar.ScrollBarThickness = 4
     TabBar.ScrollBarImageColor3 = GetTheme().DarkElement
-    TabBar.ScrollingDirection = Enum.ScrollingDirection.X
+    TabBar.ScrollingDirection = Config.TabLayout == "Horizontal" and Enum.ScrollingDirection.X or Enum.ScrollingDirection.Y
     TabBar.CanvasSize = UDim2.new(0, 0, 0, 0)
     TabBar.Parent = MainFrame
 
     local TabBarPadding = Instance.new("UIPadding")
     TabBarPadding.PaddingLeft = UDim.new(0, 8)
+    TabBarPadding.PaddingTop = Config.TabLayout == "Vertical" and UDim.new(0, 8) or UDim.new(0, 0)
     TabBarPadding.Parent = TabBar
 
     local TabLayout = Instance.new("UIListLayout")
-    TabLayout.FillDirection = Enum.FillDirection.Horizontal
+    TabLayout.FillDirection = Config.TabLayout == "Horizontal" and Enum.FillDirection.Horizontal or Enum.FillDirection.Vertical
     TabLayout.SortOrder = Enum.SortOrder.LayoutOrder
     TabLayout.Padding = UDim.new(0, 8)
     TabLayout.Parent = TabBar
 
     TabLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-        TabBar.CanvasSize = UDim2.new(0, TabLayout.AbsoluteContentSize.X + 16, 0, 0)
+        if Config.TabLayout == "Horizontal" then
+            TabBar.CanvasSize = UDim2.new(0, TabLayout.AbsoluteContentSize.X + 16, 0, 0)
+        else
+            TabBar.CanvasSize = UDim2.new(0, 0, 0, TabLayout.AbsoluteContentSize.Y + 16)
+        end
     end)
 
     local SettingsPanel = Instance.new("Frame")
@@ -428,8 +434,8 @@ function Flint:CreateWindow(options)
 
     local ContentFrame = Instance.new("Frame")
     ContentFrame.Name = "ContentFrame"
-    ContentFrame.Size = UDim2.new(1, -16, 1, -88)
-    ContentFrame.Position = UDim2.new(0, 8, 0, 88)
+    ContentFrame.Size = Config.TabLayout == "Horizontal" and UDim2.new(1, -16, 1, -88) or UDim2.new(1, -166, 1, -88)
+    ContentFrame.Position = Config.TabLayout == "Horizontal" and UDim2.new(0, 8, 0, 88) or UDim2.new(0, 158, 0, 88)
     ContentFrame.BackgroundTransparency = 1
     ContentFrame.Parent = MainFrame
 
@@ -475,6 +481,27 @@ function Flint:CreateWindow(options)
         Config.ToggleKeybind = newKey
     end)
 
+    Flint:CreateDropdown(SettingsPanelContent, "Tab Layout", {"Horizontal", "Vertical"}, Config.TabLayout, function(selected)
+        Config.TabLayout = selected
+        TabBar.Size = selected == "Horizontal" and UDim2.new(1, 0, 0, 45) or UDim2.new(0, 150, 1, -35)
+        TabBar.Position = selected == "Horizontal" and UDim2.new(0, 0, 0, 35) or UDim2.new(0, 0, 0, 35)
+        TabBar.ScrollingDirection = selected == "Horizontal" and Enum.ScrollingDirection.X or Enum.ScrollingDirection.Y
+        TabLayout.FillDirection = selected == "Horizontal" and Enum.FillDirection.Horizontal or Enum.FillDirection.Vertical
+        TabBarPadding.PaddingTop = selected == "Vertical" and UDim.new(0, 8) or UDim.new(0, 0)
+        ContentFrame.Size = selected == "Horizontal" and UDim2.new(1, -16, 1, -88) or UDim2.new(1, -166, 1, -88)
+        ContentFrame.Position = selected == "Horizontal" and UDim2.new(0, 8, 0, 88) or UDim2.new(0, 158, 0, 88)
+        
+        for _, tab in pairs(LibraryData.Tabs) do
+            tab.Button.Size = selected == "Horizontal" and UDim2.new(0, 120, 0, 35) or UDim2.new(1, -8, 0, 35)
+        end
+        
+        if selected == "Horizontal" then
+            TabBar.CanvasSize = UDim2.new(0, TabLayout.AbsoluteContentSize.X + 16, 0, 0)
+        else
+            TabBar.CanvasSize = UDim2.new(0, 0, 0, TabLayout.AbsoluteContentSize.Y + 16)
+        end
+    end)
+
     Flint:CreateSection(SettingsPanelContent, "THEME SETTINGS")
 
     local themeNames = {}
@@ -505,6 +532,12 @@ function Flint:CreateWindow(options)
             if LibraryData.UIScaleInstance then
                 LibraryData.UIScaleInstance.Scale = Config.UIScale
             end
+            TabBar.Size = Config.TabLayout == "Horizontal" and UDim2.new(1, 0, 0, 45) or UDim2.new(0, 150, 1, -35)
+            TabBar.ScrollingDirection = Config.TabLayout == "Horizontal" and Enum.ScrollingDirection.X or Enum.ScrollingDirection.Y
+            TabLayout.FillDirection = Config.TabLayout == "Horizontal" and Enum.FillDirection.Horizontal or Enum.FillDirection.Vertical
+            TabBarPadding.PaddingTop = Config.TabLayout == "Vertical" and UDim.new(0, 8) or UDim.new(0, 0)
+            ContentFrame.Size = Config.TabLayout == "Horizontal" and UDim2.new(1, -16, 1, -88) or UDim2.new(1, -166, 1, -88)
+            ContentFrame.Position = Config.TabLayout == "Horizontal" and UDim2.new(0, 8, 0, 88) or UDim2.new(0, 158, 0, 88)
         else
             Flint:Notify("No saved configuration found!")
         end
@@ -651,11 +684,12 @@ function Flint:Notify(message)
 end
 
 function Flint:CreateTab(libData, name, icon, autoSelect)
-    icon = icon or "📄"
+    LibraryData.TabCount = LibraryData.TabCount + 1
+    icon = icon or tostring(LibraryData.TabCount)
 
     local tabButton = Instance.new("TextButton")
     tabButton.Name = name .. "Button"
-    tabButton.Size = UDim2.new(0, 120, 0, 35)
+    tabButton.Size = Config.TabLayout == "Horizontal" and UDim2.new(0, 120, 0, 35) or UDim2.new(1, -8, 0, 35)
     tabButton.BackgroundColor3 = GetTheme().ElementBackground
     tabButton.BackgroundTransparency = Config.UITransparency
     tabButton.BorderSizePixel = 0
