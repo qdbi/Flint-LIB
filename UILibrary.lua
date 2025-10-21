@@ -157,7 +157,9 @@ local Config = {
     DragSmoothing = 0.15,
     GUIVisible = true,
     ToggleKeybind = Enum.KeyCode.RightShift,
-    UITransparency = 0
+    UITransparency = 0,
+    TabLayout = "Horizontal",
+    UIScale = 1.0
 }
 
 local LibraryData = nil
@@ -190,11 +192,41 @@ local function ApplyTheme(themeElements)
     end
 end
 
+function Flint:SaveConfig()
+    local configData = game:GetService("HttpService"):JSONEncode(Config)
+    if writefile then
+        writefile("FlintUI_Config.json", configData)
+        return true
+    end
+    return false
+end
+
+function Flint:LoadConfig()
+    if readfile and isfile and isfile("FlintUI_Config.json") then
+        local success, configData = pcall(function()
+            return game:GetService("HttpService"):JSONDecode(readfile("FlintUI_Config.json"))
+        end)
+        if success and configData then
+            for key, value in pairs(configData) do
+                if Config[key] ~= nil then
+                    if key == "ToggleKeybind" then
+                        Config[key] = Enum.KeyCode[value.Name] or value
+                    else
+                        Config[key] = value
+                    end
+                end
+            end
+            return true
+        end
+    end
+    return false
+end
+
 function Flint:CreateWindow(options)
     options = options or {}
     local title = options.Title or "Flint UI Library - v3.0"
-    local size = options.Size or UDim2.new(0, 500, 0, 350)
-    local position = options.Position or UDim2.new(0.5, -250, 0.5, -175)
+    local size = options.Size or UDim2.new(0, 600, 0, 350)
+    local position = options.Position or UDim2.new(0.5, -300, 0.5, -175)
 
     local ScreenGui = Instance.new("ScreenGui")
     ScreenGui.Name = "FlintUI"
@@ -214,7 +246,10 @@ function Flint:CreateWindow(options)
         Notifications = {},
         Tabs = {},
         CurrentTab = nil,
-        SettingsOpen = false
+        SettingsOpen = false,
+        UIScaleInstance = nil,
+        OriginalSize = size,
+        TabCount = 0
     }
 
     local DropdownContainer = Instance.new("Frame")
@@ -238,33 +273,29 @@ function Flint:CreateWindow(options)
     NotificationLayout.VerticalAlignment = Enum.VerticalAlignment.Bottom
     NotificationLayout.Parent = NotificationContainer
 
-    local MinimizedIcon = Instance.new("Frame")
+    local MinimizedIcon = Instance.new("TextButton")
     MinimizedIcon.Name = "MinimizedIcon"
-    MinimizedIcon.Size = UDim2.new(0, 50, 0, 50)
-    MinimizedIcon.Position = UDim2.new(0, 20, 0, 20)
-    MinimizedIcon.BackgroundColor3 = GetTheme().Background
+    MinimizedIcon.Size = UDim2.new(0, 80, 0, 30)
+    MinimizedIcon.Position = UDim2.new(0.5, -40, 0, 10)
+    MinimizedIcon.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    MinimizedIcon.BackgroundTransparency = 0.5
     MinimizedIcon.BorderSizePixel = 0
     MinimizedIcon.Visible = false
+    MinimizedIcon.Text = "Show GUI"
+    MinimizedIcon.TextColor3 = Color3.fromRGB(255, 255, 255)
+    MinimizedIcon.TextSize = 12
+    MinimizedIcon.Font = Enum.Font.GothamBold
     MinimizedIcon.Parent = ScreenGui
 
+    local IconStroke = Instance.new("UIStroke")
+    IconStroke.Color = Color3.fromRGB(50, 50, 50)
+    IconStroke.Thickness = 1
+    IconStroke.Transparency = 0
+    IconStroke.Parent = MinimizedIcon
+
     local IconCorner = Instance.new("UICorner")
-    IconCorner.CornerRadius = UDim.new(0, 12)
+    IconCorner.CornerRadius = UDim.new(0, 8)
     IconCorner.Parent = MinimizedIcon
-
-    local IconLabel = Instance.new("TextLabel")
-    IconLabel.Size = UDim2.new(1, 0, 1, 0)
-    IconLabel.BackgroundTransparency = 1
-    IconLabel.Text = "F"
-    IconLabel.TextColor3 = GetTheme().Primary
-    IconLabel.TextSize = 24
-    IconLabel.Font = Enum.Font.GothamBold
-    IconLabel.Parent = MinimizedIcon
-
-    local IconButton = Instance.new("TextButton")
-    IconButton.Size = UDim2.new(1, 0, 1, 0)
-    IconButton.BackgroundTransparency = 1
-    IconButton.Text = ""
-    IconButton.Parent = MinimizedIcon
 
     local MainFrame = Instance.new("Frame")
     MainFrame.Name = "MainFrame"
@@ -274,6 +305,12 @@ function Flint:CreateWindow(options)
     MainFrame.BorderSizePixel = 0
     MainFrame.ClipsDescendants = true
     MainFrame.Parent = ScreenGui
+
+    local UIScale = Instance.new("UIScale")
+    UIScale.Scale = Config.UIScale
+    UIScale.Parent = MainFrame
+
+    LibraryData.UIScaleInstance = UIScale
 
     local MainCorner = Instance.new("UICorner")
     MainCorner.CornerRadius = UDim.new(0, 12)
@@ -299,7 +336,7 @@ function Flint:CreateWindow(options)
     TopBarFill.Parent = TopBar
 
     local TopBarTitle = Instance.new("TextLabel")
-    TopBarTitle.Size = UDim2.new(1, -100, 1, 0)
+    TopBarTitle.Size = UDim2.new(1, -150, 1, 0)
     TopBarTitle.Position = UDim2.new(0, 15, 0, 0)
     TopBarTitle.BackgroundTransparency = 1
     TopBarTitle.Text = title
@@ -308,6 +345,22 @@ function Flint:CreateWindow(options)
     TopBarTitle.Font = Enum.Font.GothamBold
     TopBarTitle.TextXAlignment = Enum.TextXAlignment.Left
     TopBarTitle.Parent = TopBar
+
+    local SettingsButton = Instance.new("TextButton")
+    SettingsButton.Name = "SettingsButton"
+    SettingsButton.Size = UDim2.new(0, 30, 0, 25)
+    SettingsButton.Position = UDim2.new(1, -75, 0, 5)
+    SettingsButton.BackgroundColor3 = GetTheme().ElementBackground
+    SettingsButton.BorderSizePixel = 0
+    SettingsButton.Text = "⚙"
+    SettingsButton.TextColor3 = GetTheme().TextPrimary
+    SettingsButton.TextSize = 16
+    SettingsButton.Font = Enum.Font.GothamBold
+    SettingsButton.Parent = TopBar
+
+    local SettingsButtonCorner = Instance.new("UICorner")
+    SettingsButtonCorner.CornerRadius = UDim.new(0, 6)
+    SettingsButtonCorner.Parent = SettingsButton
 
     local MinimizeButton = Instance.new("TextButton")
     MinimizeButton.Size = UDim2.new(0, 30, 0, 25)
@@ -324,46 +377,41 @@ function Flint:CreateWindow(options)
     MinimizeCorner.CornerRadius = UDim.new(0, 6)
     MinimizeCorner.Parent = MinimizeButton
 
-    local Sidebar = Instance.new("Frame")
-    Sidebar.Name = "Sidebar"
-    Sidebar.Size = UDim2.new(0, 150, 1, -35)
-    Sidebar.Position = UDim2.new(0, 0, 0, 35)
-    Sidebar.BackgroundColor3 = GetTheme().SecondaryBackground
-    Sidebar.BorderSizePixel = 0
-    Sidebar.Parent = MainFrame
+    local TabBar = Instance.new("ScrollingFrame")
+    TabBar.Name = "TabBar"
+    TabBar.Size = Config.TabLayout == "Horizontal" and UDim2.new(1, 0, 0, 45) or UDim2.new(0, 150, 1, -35)
+    TabBar.Position = Config.TabLayout == "Horizontal" and UDim2.new(0, 0, 0, 35) or UDim2.new(0, 0, 0, 35)
+    TabBar.BackgroundColor3 = GetTheme().SecondaryBackground
+    TabBar.BorderSizePixel = 0
+    TabBar.ScrollBarThickness = 4
+    TabBar.ScrollBarImageColor3 = GetTheme().DarkElement
+    TabBar.ScrollingDirection = Config.TabLayout == "Horizontal" and Enum.ScrollingDirection.X or Enum.ScrollingDirection.Y
+    TabBar.CanvasSize = UDim2.new(0, 0, 0, 0)
+    TabBar.Parent = MainFrame
 
-    local SidebarTitle = Instance.new("TextLabel")
-    SidebarTitle.Name = "Title"
-    SidebarTitle.Size = UDim2.new(1, -20, 0, 45)
-    SidebarTitle.Position = UDim2.new(0, 10, 0, 5)
-    SidebarTitle.BackgroundTransparency = 1
-    SidebarTitle.Text = "MENU"
-    SidebarTitle.TextColor3 = GetTheme().Primary
-    SidebarTitle.TextSize = 16
-    SidebarTitle.Font = Enum.Font.GothamBold
-    SidebarTitle.TextXAlignment = Enum.TextXAlignment.Left
-    SidebarTitle.Parent = Sidebar
+    local TabBarPadding = Instance.new("UIPadding")
+    TabBarPadding.PaddingLeft = UDim.new(0, 8)
+    TabBarPadding.PaddingTop = Config.TabLayout == "Vertical" and UDim.new(0, 8) or UDim.new(0, 0)
+    TabBarPadding.Parent = TabBar
 
-    local SettingsButton = Instance.new("TextButton")
-    SettingsButton.Name = "SettingsButton"
-    SettingsButton.Size = UDim2.new(0, 40, 0, 40)
-    SettingsButton.Position = UDim2.new(0, 10, 1, -50)
-    SettingsButton.BackgroundColor3 = GetTheme().ElementBackground
-    SettingsButton.BorderSizePixel = 0
-    SettingsButton.Text = "⚙"
-    SettingsButton.TextColor3 = GetTheme().TextPrimary
-    SettingsButton.TextSize = 20
-    SettingsButton.Font = Enum.Font.GothamBold
-    SettingsButton.Parent = Sidebar
+    local TabLayout = Instance.new("UIListLayout")
+    TabLayout.FillDirection = Config.TabLayout == "Horizontal" and Enum.FillDirection.Horizontal or Enum.FillDirection.Vertical
+    TabLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    TabLayout.Padding = UDim.new(0, 8)
+    TabLayout.Parent = TabBar
 
-    local SettingsButtonCorner = Instance.new("UICorner")
-    SettingsButtonCorner.CornerRadius = UDim.new(0, 8)
-    SettingsButtonCorner.Parent = SettingsButton
+    TabLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+        if Config.TabLayout == "Horizontal" then
+            TabBar.CanvasSize = UDim2.new(0, TabLayout.AbsoluteContentSize.X + 16, 0, 0)
+        else
+            TabBar.CanvasSize = UDim2.new(0, 0, 0, TabLayout.AbsoluteContentSize.Y + 16)
+        end
+    end)
 
     local SettingsPanel = Instance.new("Frame")
     SettingsPanel.Name = "SettingsPanel"
-    SettingsPanel.Size = UDim2.new(0, 0, 1, -35)
-    SettingsPanel.Position = UDim2.new(0, 150, 0, 35)
+    SettingsPanel.Size = UDim2.new(0, 0, 1, -80)
+    SettingsPanel.Position = UDim2.new(0, 0, 0, 80)
     SettingsPanel.BackgroundColor3 = GetTheme().Background
     SettingsPanel.BorderSizePixel = 0
     SettingsPanel.ClipsDescendants = true
@@ -393,28 +441,27 @@ function Flint:CreateWindow(options)
 
     local ContentFrame = Instance.new("Frame")
     ContentFrame.Name = "ContentFrame"
-    ContentFrame.Size = UDim2.new(1, -165, 1, -50)
-    ContentFrame.Position = UDim2.new(0, 158, 0, 43)
+    ContentFrame.Size = Config.TabLayout == "Horizontal" and UDim2.new(1, -16, 1, -88) or UDim2.new(1, -166, 1, -88)
+    ContentFrame.Position = Config.TabLayout == "Horizontal" and UDim2.new(0, 8, 0, 88) or UDim2.new(0, 158, 0, 88)
     ContentFrame.BackgroundTransparency = 1
     ContentFrame.Parent = MainFrame
 
     LibraryData.MainFrame = MainFrame
-    LibraryData.Sidebar = Sidebar
+    LibraryData.TabBar = TabBar
     LibraryData.ContentFrame = ContentFrame
     LibraryData.DropdownContainer = DropdownContainer
     LibraryData.MinimizedIcon = MinimizedIcon
     LibraryData.SettingsPanel = SettingsPanel
     LibraryData.SettingsPanelContent = SettingsPanelContent
+    LibraryData.TopBar = TopBar
+    LibraryData.SettingsButton = SettingsButton
 
     LibraryData.ThemeElements[MainFrame] = "Background"
     LibraryData.ThemeElements[TopBar] = "SecondaryBackground"
     LibraryData.ThemeElements[TopBarFill] = "SecondaryBackground"
     LibraryData.ThemeElements[TopBarTitle] = "TextPrimary"
     LibraryData.ThemeElements[MinimizeButton] = "ElementBackground"
-    LibraryData.ThemeElements[Sidebar] = "SecondaryBackground"
-    LibraryData.ThemeElements[SidebarTitle] = "TextPrimary"
-    LibraryData.ThemeElements[MinimizedIcon] = "Background"
-    LibraryData.ThemeElements[IconLabel] = "TextPrimary"
+    LibraryData.ThemeElements[TabBar] = "SecondaryBackground"
     LibraryData.ThemeElements[SettingsButton] = "ElementBackground"
     LibraryData.ThemeElements[SettingsPanel] = "Background"
 
@@ -429,8 +476,55 @@ function Flint:CreateWindow(options)
         ApplyTheme(LibraryData.ThemeElements)
     end)
 
+    Flint:CreateSlider(SettingsPanelContent, "UI Scale", 50, 150, math.floor(Config.UIScale * 100), function(value)
+        Config.UIScale = value / 100
+        if LibraryData.UIScaleInstance then
+            LibraryData.UIScaleInstance.Scale = Config.UIScale
+        end
+    end)
+
     Flint:CreateKeybind(SettingsPanelContent, "Toggle GUI Keybind", Config.ToggleKeybind, function(newKey)
         Config.ToggleKeybind = newKey
+    end)
+
+    Flint:CreateDropdown(SettingsPanelContent, "Tab Layout", {"Horizontal", "Vertical"}, Config.TabLayout, function(selected)
+        Config.TabLayout = selected
+
+        local tweenInfo = TweenInfo.new(0.4, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
+
+        local newMainSize = selected == "Horizontal" and LibraryData.OriginalSize or UDim2.new(0, 750, 0, 350)
+        local newTabBarSize = selected == "Horizontal" and UDim2.new(1, 0, 0, 45) or UDim2.new(0, 150, 1, -35)
+        local newTabBarPos = selected == "Horizontal" and UDim2.new(0, 0, 0, 35) or UDim2.new(0, 0, 0, 35)
+        local newContentSize = selected == "Horizontal" and UDim2.new(1, -16, 1, -88) or UDim2.new(1, -166, 1, -88)
+        local newContentPos = selected == "Horizontal" and UDim2.new(0, 8, 0, 88) or UDim2.new(0, 158, 0, 88)
+
+        TweenService:Create(MainFrame, tweenInfo, {Size = newMainSize}):Play()
+
+        TweenService:Create(TabBar, tweenInfo, {
+            Size = newTabBarSize,
+            Position = newTabBarPos
+        }):Play()
+
+        TweenService:Create(ContentFrame, tweenInfo, {
+            Size = newContentSize,
+            Position = newContentPos
+        }):Play()
+
+        TabBar.ScrollingDirection = selected == "Horizontal" and Enum.ScrollingDirection.X or Enum.ScrollingDirection.Y
+        TabLayout.FillDirection = selected == "Horizontal" and Enum.FillDirection.Horizontal or Enum.FillDirection.Vertical
+        TabBarPadding.PaddingTop = selected == "Vertical" and UDim.new(0, 8) or UDim.new(0, 0)
+
+        for _, tab in pairs(LibraryData.Tabs) do
+            local newTabSize = selected == "Horizontal" and UDim2.new(0, 120, 0, 35) or UDim2.new(1, -8, 0, 35)
+            TweenService:Create(tab.Button, tweenInfo, {Size = newTabSize}):Play()
+        end
+
+        task.wait(0.4)
+        if selected == "Horizontal" then
+            TabBar.CanvasSize = UDim2.new(0, TabLayout.AbsoluteContentSize.X + 16, 0, 0)
+        else
+            TabBar.CanvasSize = UDim2.new(0, 0, 0, TabLayout.AbsoluteContentSize.Y + 16)
+        end
     end)
 
     Flint:CreateSection(SettingsPanelContent, "THEME SETTINGS")
@@ -446,17 +540,45 @@ function Flint:CreateWindow(options)
         ApplyTheme(LibraryData.ThemeElements)
     end)
 
+    Flint:CreateSection(SettingsPanelContent, "CONFIGURATION")
+
+    Flint:CreateButton(SettingsPanelContent, "Save Configuration", function()
+        if Flint:SaveConfig() then
+            Flint:Notify("Configuration saved!")
+        else
+            Flint:Notify("Failed to save configuration!")
+        end
+    end)
+
+    Flint:CreateButton(SettingsPanelContent, "Load Configuration", function()
+        if Flint:LoadConfig() then
+            Flint:Notify("Configuration loaded!")
+            ApplyTheme(LibraryData.ThemeElements)
+            if LibraryData.UIScaleInstance then
+                LibraryData.UIScaleInstance.Scale = Config.UIScale
+            end
+            TabBar.Size = Config.TabLayout == "Horizontal" and UDim2.new(1, 0, 0, 45) or UDim2.new(0, 150, 1, -35)
+            TabBar.ScrollingDirection = Config.TabLayout == "Horizontal" and Enum.ScrollingDirection.X or Enum.ScrollingDirection.Y
+            TabLayout.FillDirection = Config.TabLayout == "Horizontal" and Enum.FillDirection.Horizontal or Enum.FillDirection.Vertical
+            TabBarPadding.PaddingTop = Config.TabLayout == "Vertical" and UDim.new(0, 8) or UDim.new(0, 0)
+            ContentFrame.Size = Config.TabLayout == "Horizontal" and UDim2.new(1, -16, 1, -88) or UDim2.new(1, -166, 1, -88)
+            ContentFrame.Position = Config.TabLayout == "Horizontal" and UDim2.new(0, 8, 0, 88) or UDim2.new(0, 158, 0, 88)
+        else
+            Flint:Notify("No saved configuration found!")
+        end
+    end)
+
     SettingsButton.MouseButton1Click:Connect(function()
         LibraryData.SettingsOpen = not LibraryData.SettingsOpen
         if LibraryData.SettingsOpen then
             SettingsPanel.Visible = true
             ContentFrame.Visible = false
-            TweenService:Create(SettingsPanel, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = UDim2.new(1, -165, 1, -35)}):Play()
+            TweenService:Create(SettingsPanel, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = UDim2.new(1, -16, 1, -88)}):Play()
             SettingsButton.BackgroundColor3 = GetTheme().Primary
             SettingsButton.TextColor3 = GetTheme().Background
         else
             ContentFrame.Visible = true
-            local closeTween = TweenService:Create(SettingsPanel, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Size = UDim2.new(0, 0, 1, -35)})
+            local closeTween = TweenService:Create(SettingsPanel, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Size = UDim2.new(0, 0, 1, -88)})
             closeTween:Play()
             closeTween.Completed:Connect(function()
                 SettingsPanel.Visible = false
@@ -484,7 +606,7 @@ function Flint:CreateWindow(options)
     end
 
     MinimizeButton.MouseButton1Click:Connect(ToggleGUI)
-    IconButton.MouseButton1Click:Connect(ToggleGUI)
+    MinimizedIcon.MouseButton1Click:Connect(ToggleGUI)
 
     UserInputService.InputBegan:Connect(function(input, gameProcessed)
         if not gameProcessed and input.KeyCode == Config.ToggleKeybind then
@@ -526,38 +648,12 @@ function Flint:CreateWindow(options)
         end
     end)
 
-    local iconDragging, iconDragInput, iconDragStart, iconStartPos
-
-    local function updateIcon(input)
-        local delta = input.Position - iconDragStart
-        local targetPos = UDim2.new(iconStartPos.X.Scale, iconStartPos.X.Offset + delta.X, iconStartPos.Y.Scale, iconStartPos.Y.Offset + delta.Y)
-        TweenService:Create(MinimizedIcon, TweenInfo.new(Config.DragSmoothing, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Position = targetPos}):Play()
-    end
-
-    MinimizedIcon.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            iconDragging = true
-            iconDragStart = input.Position
-            iconStartPos = MinimizedIcon.Position
-
-            input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then
-                    iconDragging = false
-                end
-            end)
-        end
+    MinimizedIcon.MouseEnter:Connect(function()
+        TweenService:Create(MinimizedIcon, TweenInfo.new(0.2), {BackgroundTransparency = 0.3}):Play()
     end)
 
-    MinimizedIcon.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-            iconDragInput = input
-        end
-    end)
-
-    UserInputService.InputChanged:Connect(function(input)
-        if input == iconDragInput and iconDragging then
-            updateIcon(input)
-        end
+    MinimizedIcon.MouseLeave:Connect(function()
+        TweenService:Create(MinimizedIcon, TweenInfo.new(0.2), {BackgroundTransparency = 0.5}):Play()
     end)
 
     return LibraryData
@@ -613,43 +709,43 @@ function Flint:Notify(message)
 end
 
 function Flint:CreateTab(libData, name, icon, autoSelect)
-    local tabCount = #libData.Tabs + 1
-    local yOffset = 55 + (#libData.Tabs * 40)
-    icon = icon or tostring(tabCount)
+    LibraryData.TabCount = LibraryData.TabCount + 1
+    icon = icon or tostring(LibraryData.TabCount)
 
     local tabButton = Instance.new("TextButton")
     tabButton.Name = name .. "Button"
-    tabButton.Size = UDim2.new(1, -20, 0, 35)
-    tabButton.Position = UDim2.new(0, 10, 0, yOffset)
+    tabButton.Size = Config.TabLayout == "Horizontal" and UDim2.new(0, 120, 0, 35) or UDim2.new(1, -8, 0, 35)
     tabButton.BackgroundColor3 = GetTheme().ElementBackground
     tabButton.BackgroundTransparency = Config.UITransparency
     tabButton.BorderSizePixel = 0
     tabButton.Text = ""
     tabButton.AutoButtonColor = false
-    tabButton.Parent = libData.Sidebar
+    tabButton.Parent = libData.TabBar
 
     local buttonCorner = Instance.new("UICorner")
     buttonCorner.CornerRadius = UDim.new(0, 8)
     buttonCorner.Parent = tabButton
 
     local buttonLabel = Instance.new("TextLabel")
-    buttonLabel.Size = UDim2.new(1, -35, 1, 0)
-    buttonLabel.Position = UDim2.new(0, 30, 0, 0)
+    buttonLabel.Size = UDim2.new(1, -28, 1, 0)
+    buttonLabel.Position = UDim2.new(0, 24, 0, 0)
     buttonLabel.BackgroundTransparency = 1
     buttonLabel.Text = name
     buttonLabel.TextColor3 = GetTheme().TextSecondary
-    buttonLabel.TextSize = 12
+    buttonLabel.TextSize = 11
     buttonLabel.Font = Enum.Font.Gotham
     buttonLabel.TextXAlignment = Enum.TextXAlignment.Left
+    buttonLabel.TextTruncate = Enum.TextTruncate.None
+    buttonLabel.ClipsDescendants = false
     buttonLabel.Parent = tabButton
 
     local iconLabel = Instance.new("TextLabel")
-    iconLabel.Size = UDim2.new(0, 18, 0, 18)
-    iconLabel.Position = UDim2.new(0, 8, 0.5, -9)
+    iconLabel.Size = UDim2.new(0, 16, 0, 16)
+    iconLabel.Position = UDim2.new(0, 6, 0.5, -8)
     iconLabel.BackgroundTransparency = 1
     iconLabel.Text = icon
     iconLabel.TextColor3 = GetTheme().TextSecondary
-    iconLabel.TextSize = 14
+    iconLabel.TextSize = 13
     iconLabel.Font = Enum.Font.GothamBold
     iconLabel.Parent = tabButton
 
@@ -695,14 +791,16 @@ function Flint:CreateTab(libData, name, icon, autoSelect)
 
         if libData.SettingsOpen then
             libData.SettingsOpen = false
-            local closeTween = TweenService:Create(libData.SettingsPanel, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Size = UDim2.new(0, 0, 1, -35)})
+            local closeTween = TweenService:Create(libData.SettingsPanel, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Size = UDim2.new(0, 0, 1, -88)})
             closeTween:Play()
             closeTween.Completed:Connect(function()
                 libData.SettingsPanel.Visible = false
             end)
-            libData.Sidebar:FindFirstChild("SettingsButton").BackgroundColor3 = GetTheme().ElementBackground
-            libData.Sidebar:FindFirstChild("SettingsButton").TextColor3 = GetTheme().TextPrimary
+            libData.SettingsButton.BackgroundColor3 = GetTheme().ElementBackground
+            libData.SettingsButton.TextColor3 = GetTheme().TextPrimary
         end
+
+        libData.ContentFrame.Visible = true
 
         for _, tab in pairs(libData.Tabs) do
             tab.Content.Visible = false
@@ -721,6 +819,18 @@ function Flint:CreateTab(libData, name, icon, autoSelect)
     end
 
     tabButton.MouseButton1Click:Connect(SwitchTab)
+
+    tabButton.MouseEnter:Connect(function()
+        if libData.CurrentTab ~= tabData then
+            TweenService:Create(tabButton, TweenInfo.new(0.2), {BackgroundColor3 = GetTheme().Hover}):Play()
+        end
+    end)
+
+    tabButton.MouseLeave:Connect(function()
+        if libData.CurrentTab ~= tabData then
+            TweenService:Create(tabButton, TweenInfo.new(0.2), {BackgroundColor3 = GetTheme().ElementBackground}):Play()
+        end
+    end)
 
     if autoSelect or #libData.Tabs == 1 then
         SwitchTab()
