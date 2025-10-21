@@ -308,7 +308,6 @@ function Flint:CreateWindow(options)
     MainCorner.CornerRadius = UDim.new(0, 12)
     MainCorner.Parent = MainFrame
 
-    -- Top bar with title on left, settings and minimize on right
     local TopBar = Instance.new("Frame")
     TopBar.Name = "TopBar"
     TopBar.Size = UDim2.new(1, 0, 0, 35)
@@ -381,6 +380,10 @@ function Flint:CreateWindow(options)
     TabBar.ScrollingDirection = Enum.ScrollingDirection.X
     TabBar.CanvasSize = UDim2.new(0, 0, 0, 0)
     TabBar.Parent = MainFrame
+
+    local TabBarPadding = Instance.new("UIPadding")
+    TabBarPadding.PaddingLeft = UDim.new(0, 8)
+    TabBarPadding.Parent = TabBar
 
     local TabLayout = Instance.new("UIListLayout")
     TabLayout.FillDirection = Enum.FillDirection.Horizontal
@@ -650,7 +653,6 @@ end
 function Flint:CreateTab(libData, name, icon, autoSelect)
     icon = icon or "📄"
 
-    -- Create horizontal tab button
     local tabButton = Instance.new("TextButton")
     tabButton.Name = name .. "Button"
     tabButton.Size = UDim2.new(0, 120, 0, 35)
@@ -728,7 +730,6 @@ function Flint:CreateTab(libData, name, icon, autoSelect)
     local function SwitchTab()
         if libData.CurrentTab == tabData then return end
 
-        -- Close settings panel if open
         if libData.SettingsOpen then
             libData.SettingsOpen = false
             local closeTween = TweenService:Create(libData.SettingsPanel, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Size = UDim2.new(0, 0, 1, -88)})
@@ -740,10 +741,8 @@ function Flint:CreateTab(libData, name, icon, autoSelect)
             libData.SettingsButton.TextColor3 = GetTheme().TextPrimary
         end
 
-        -- Show content frame
         libData.ContentFrame.Visible = true
 
-        -- Deselect all tabs
         for _, tab in pairs(libData.Tabs) do
             tab.Content.Visible = false
             tab.Button.BackgroundColor3 = GetTheme().ElementBackground
@@ -752,7 +751,6 @@ function Flint:CreateTab(libData, name, icon, autoSelect)
             tab.Icon.TextColor3 = GetTheme().TextSecondary
         end
 
-        -- Select this tab
         tabContent.Visible = true
         tabButton.BackgroundColor3 = GetTheme().Primary
         tabButton.BackgroundTransparency = Config.UITransparency
@@ -763,7 +761,6 @@ function Flint:CreateTab(libData, name, icon, autoSelect)
 
     tabButton.MouseButton1Click:Connect(SwitchTab)
 
-    -- Hover effects
     tabButton.MouseEnter:Connect(function()
         if libData.CurrentTab ~= tabData then
             TweenService:Create(tabButton, TweenInfo.new(0.2), {BackgroundColor3 = GetTheme().Hover}):Play()
