@@ -483,18 +483,37 @@ function Flint:CreateWindow(options)
 
     Flint:CreateDropdown(SettingsPanelContent, "Tab Layout", {"Horizontal", "Vertical"}, Config.TabLayout, function(selected)
         Config.TabLayout = selected
-        TabBar.Size = selected == "Horizontal" and UDim2.new(1, 0, 0, 45) or UDim2.new(0, 150, 1, -35)
-        TabBar.Position = selected == "Horizontal" and UDim2.new(0, 0, 0, 35) or UDim2.new(0, 0, 0, 35)
+        
+        local tweenInfo = TweenInfo.new(0.4, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
+        
+        local newMainSize = selected == "Horizontal" and LibraryData.OriginalSize or UDim2.new(0, 650, 0, 350)
+        local newTabBarSize = selected == "Horizontal" and UDim2.new(1, 0, 0, 45) or UDim2.new(0, 150, 1, -35)
+        local newTabBarPos = selected == "Horizontal" and UDim2.new(0, 0, 0, 35) or UDim2.new(0, 0, 0, 35)
+        local newContentSize = selected == "Horizontal" and UDim2.new(1, -16, 1, -88) or UDim2.new(1, -166, 1, -88)
+        local newContentPos = selected == "Horizontal" and UDim2.new(0, 8, 0, 88) or UDim2.new(0, 158, 0, 88)
+        
+        TweenService:Create(MainFrame, tweenInfo, {Size = newMainSize}):Play()
+        
+        TweenService:Create(TabBar, tweenInfo, {
+            Size = newTabBarSize,
+            Position = newTabBarPos
+        }):Play()
+        
+        TweenService:Create(ContentFrame, tweenInfo, {
+            Size = newContentSize,
+            Position = newContentPos
+        }):Play()
+        
         TabBar.ScrollingDirection = selected == "Horizontal" and Enum.ScrollingDirection.X or Enum.ScrollingDirection.Y
         TabLayout.FillDirection = selected == "Horizontal" and Enum.FillDirection.Horizontal or Enum.FillDirection.Vertical
         TabBarPadding.PaddingTop = selected == "Vertical" and UDim.new(0, 8) or UDim.new(0, 0)
-        ContentFrame.Size = selected == "Horizontal" and UDim2.new(1, -16, 1, -88) or UDim2.new(1, -166, 1, -88)
-        ContentFrame.Position = selected == "Horizontal" and UDim2.new(0, 8, 0, 88) or UDim2.new(0, 158, 0, 88)
         
         for _, tab in pairs(LibraryData.Tabs) do
-            tab.Button.Size = selected == "Horizontal" and UDim2.new(0, 120, 0, 35) or UDim2.new(1, -8, 0, 35)
+            local newTabSize = selected == "Horizontal" and UDim2.new(0, 120, 0, 35) or UDim2.new(1, -8, 0, 35)
+            TweenService:Create(tab.Button, tweenInfo, {Size = newTabSize}):Play()
         end
         
+        task.wait(0.4)
         if selected == "Horizontal" then
             TabBar.CanvasSize = UDim2.new(0, TabLayout.AbsoluteContentSize.X + 16, 0, 0)
         else
