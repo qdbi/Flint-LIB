@@ -225,8 +225,8 @@ end
 function Flint:CreateWindow(options)
     options = options or {}
     local title = options.Title or "Flint UI Library - v3.0"
-    local size = options.Size or UDim2.new(0, 500, 0, 350)
-    local position = options.Position or UDim2.new(0.5, -250, 0.5, -175)
+    local size = options.Size or UDim2.new(0, 600, 0, 350)
+    local position = options.Position or UDim2.new(0.5, -300, 0.5, -175)
 
     local ScreenGui = Instance.new("ScreenGui")
     ScreenGui.Name = "FlintUI"
@@ -275,16 +275,23 @@ function Flint:CreateWindow(options)
 
     local MinimizedIcon = Instance.new("TextButton")
     MinimizedIcon.Name = "MinimizedIcon"
-    MinimizedIcon.Size = UDim2.new(0, 120, 0, 40)
-    MinimizedIcon.Position = UDim2.new(0.5, -60, 0, 10)
-    MinimizedIcon.BackgroundColor3 = GetTheme().Primary
+    MinimizedIcon.Size = UDim2.new(0, 80, 0, 30)
+    MinimizedIcon.Position = UDim2.new(0.5, -40, 0, 10)
+    MinimizedIcon.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    MinimizedIcon.BackgroundTransparency = 0.5
     MinimizedIcon.BorderSizePixel = 0
     MinimizedIcon.Visible = false
-    MinimizedIcon.Text = "Show " .. title
-    MinimizedIcon.TextColor3 = GetTheme().Background
+    MinimizedIcon.Text = "Show GUI"
+    MinimizedIcon.TextColor3 = Color3.fromRGB(255, 255, 255)
     MinimizedIcon.TextSize = 12
     MinimizedIcon.Font = Enum.Font.GothamBold
     MinimizedIcon.Parent = ScreenGui
+
+    local IconStroke = Instance.new("UIStroke")
+    IconStroke.Color = Color3.fromRGB(50, 50, 50)
+    IconStroke.Thickness = 1
+    IconStroke.Transparency = 0
+    IconStroke.Parent = MinimizedIcon
 
     local IconCorner = Instance.new("UICorner")
     IconCorner.CornerRadius = UDim.new(0, 8)
@@ -455,7 +462,6 @@ function Flint:CreateWindow(options)
     LibraryData.ThemeElements[TopBarTitle] = "TextPrimary"
     LibraryData.ThemeElements[MinimizeButton] = "ElementBackground"
     LibraryData.ThemeElements[TabBar] = "SecondaryBackground"
-    LibraryData.ThemeElements[MinimizedIcon] = "Primary"
     LibraryData.ThemeElements[SettingsButton] = "ElementBackground"
     LibraryData.ThemeElements[SettingsPanel] = "Background"
 
@@ -486,7 +492,7 @@ function Flint:CreateWindow(options)
         
         local tweenInfo = TweenInfo.new(0.4, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
         
-        local newMainSize = selected == "Horizontal" and LibraryData.OriginalSize or UDim2.new(0, 650, 0, 350)
+        local newMainSize = selected == "Horizontal" and LibraryData.OriginalSize or UDim2.new(0, 750, 0, 350)
         local newTabBarSize = selected == "Horizontal" and UDim2.new(1, 0, 0, 45) or UDim2.new(0, 150, 1, -35)
         local newTabBarPos = selected == "Horizontal" and UDim2.new(0, 0, 0, 35) or UDim2.new(0, 0, 0, 35)
         local newContentSize = selected == "Horizontal" and UDim2.new(1, -16, 1, -88) or UDim2.new(1, -166, 1, -88)
@@ -643,11 +649,11 @@ function Flint:CreateWindow(options)
     end)
 
     MinimizedIcon.MouseEnter:Connect(function()
-        TweenService:Create(MinimizedIcon, TweenInfo.new(0.2), {BackgroundColor3 = GetTheme().Secondary}):Play()
+        TweenService:Create(MinimizedIcon, TweenInfo.new(0.2), {BackgroundTransparency = 0.3}):Play()
     end)
 
     MinimizedIcon.MouseLeave:Connect(function()
-        TweenService:Create(MinimizedIcon, TweenInfo.new(0.2), {BackgroundColor3 = GetTheme().Primary}):Play()
+        TweenService:Create(MinimizedIcon, TweenInfo.new(0.2), {BackgroundTransparency = 0.5}):Play()
     end)
 
     return LibraryData
